@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070b1d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="星空">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>星空カレンダー</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1330'/%3E%3Cpath d='M40 12a20 20 0 1 0 12 32A16 16 0 1 1 40 12z' fill='%23ffe9a8'/%3E%3Ccircle cx='16' cy='16' r='2' fill='%23fff'/%3E%3Ccircle cx='50' cy='20' r='1.5' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+:root{--bg:#070b1d;--card:#0f1631;--card2:#161f3e;--line:#26315a;--text:#e8ecff;--sub:#9aa6d1;--accent:#8fb4ff;--gold:#ffd88a;--good:#7ee0a8;--ok:#c2e57f;--warn:#ffcf6e;--bad:#ff8a8a}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:radial-gradient(1100px 520px at 75% -10%,#1b2a5e 0%,transparent 60%),var(--bg);background-attachment:fixed;color:var(--text);font-family:system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;line-height:1.55}
+header{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:calc(10px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 10px calc(14px + env(safe-area-inset-left));background:rgba(7,11,29,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+h1{font-size:18px;margin:0 auto 0 0;letter-spacing:.06em;white-space:nowrap}
+h1 span{color:var(--gold)}
+main{max-width:1040px;margin:0 auto;padding:12px}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+h2{font-size:16px;margin:0 0 10px}
+select,button,input{font:inherit;color:inherit}
+select,.btn{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:6px 10px;font-size:14px}
+.btn{cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.on{background:#4a0d18;border-color:#ff5a6a}
+.sub{color:var(--sub);font-size:12.5px}
+.note{color:var(--sub);font-size:12px;margin:8px 0 0}
+/* forecast */
+.fcrow{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(112px,1fr);gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.fc{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:8px 6px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+.fc.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.fc .fd{font-size:13px;color:var(--sub)}
+.fc .stars{color:var(--gold);letter-spacing:1px;font-size:14px}
+.fc .rt{font-size:13px;font-weight:700}
+.fc .sm{font-size:11.5px;color:var(--sub)}
+.r-good{color:var(--good)}.r-ok{color:var(--ok)}.r-meh{color:var(--warn)}.r-bad{color:var(--bad)}
+/* day */
+.dayhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.dayhead h2{margin:0}
+.badge{font-size:12px;background:#2b3c7a;border-radius:6px;padding:1px 7px;color:#dfe7ff}
+.daygrid{display:grid;grid-template-columns:1fr;gap:16px}
+@media(min-width:880px){.daygrid{grid-template-columns:1fr 470px}}
+.info{display:grid;gap:7px;font-size:14px}
+.it{display:flex;gap:8px;align-items:flex-start}
+.it .ic{width:22px;text-align:center;flex:none}
+.it b{font-weight:600}
+.score{font-size:15px}
+.score .stars{color:var(--gold);letter-spacing:1px}
+.box{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+.box h3{font-size:13.5px;margin:0 0 6px;color:var(--sub);font-weight:600}
+.chartwrap{position:relative}
+#sky{width:100%;aspect-ratio:1/1;display:block;touch-action:manipulation;cursor:crosshair}
+.timebar{display:flex;gap:8px;align-items:center;margin-top:6px}
+.timebar input{flex:1;accent-color:var(--accent);min-width:0}
+#timeLbl{min-width:84px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+#skyTip{min-height:20px;font-size:13px;color:var(--gold);margin-top:4px}
+.pls{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));margin-top:14px}
+.pl{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13.5px}
+.pl .dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:-1px;box-shadow:0 0 6px currentColor}
+.pl.no{opacity:.5}
+.pl .vis{margin-top:2px}
+/* calendar */
+.calhead{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.calhead h2{margin:0;flex:1;text-align:center}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.wd{text-align:center;font-size:12px;color:var(--sub)}
+.wd.s0{color:#ff9a9a}.wd.s6{color:#9ac0ff}
+.cell{background:var(--card2);border:1px solid var(--line);border-radius:8px;min-height:80px;padding:3px 3px 4px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:1px;overflow:hidden;min-width:0}
+.cell.blank{background:transparent;border:none;cursor:default}
+.cell .cn{font-size:12.5px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:2px}
+.cell.today{border-color:var(--gold)}
+.cell.sel{box-shadow:0 0 0 2px var(--accent) inset}
+.cell.d0 .cn>span:first-child{color:#ff9a9a}.cell.d6 .cn>span:first-child{color:#9ac0ff}
+.cell svg{display:block}
+.tag{display:block;font-size:10px;line-height:1.35;border-radius:4px;padding:0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-meteor{background:#3b2a66;color:#e2d4ff}.c-eclipse{background:#62262a;color:#ffd2c2}.c-planet{background:#574616;color:#ffe9b0}.c-conj{background:#1d3a55;color:#cfe8ff}.c-season{background:#1d4733;color:#c8f5dc}.c-moon{color:var(--sub);padding:0}
+.ndot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:8px;font-size:11.5px;color:var(--sub)}
+.legend .tag{display:inline-block}
+/* events */
+.evlist{display:grid;gap:6px}
+.ev{display:grid;grid-template-columns:30px 1fr;gap:1px 8px;text-align:left;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;cursor:pointer;width:100%}
+.ev:hover{border-color:var(--accent)}
+.ev .ei{grid-row:span 2;font-size:20px;line-height:1.3;text-align:center}
+.ev .et b{font-weight:600}
+.ev .ed{color:var(--sub);font-size:12.5px;margin-right:6px;font-variant-numeric:tabular-nums}
+.ev .edt{font-size:12.5px;color:#c6cdee}
+.ev.lv1{border-color:#7d63ff;background:linear-gradient(90deg,#221b4d,var(--card2) 60%)}
+.mh{font-size:13px;color:var(--gold);margin:12px 0 4px;padding-bottom:2px;border-bottom:1px solid var(--line)}
+.uphead{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.uphead h2{margin:0;flex:1}
+footer{max-width:1040px;margin:0 auto;padding:4px 16px calc(34px + env(safe-area-inset-bottom));color:var(--sub);font-size:11.5px}
+#installTip{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:20;background:#1d2b5e;border:1px solid var(--accent);border-radius:12px;padding:10px 38px 10px 12px;font-size:13px;box-shadow:0 6px 24px rgba(0,0,0,.5);display:none}
+#installTip.show{display:block}
+#installTip button{position:absolute;top:6px;right:6px;background:none;border:none;font-size:18px;cursor:pointer;color:var(--sub)}
+@media(display-mode:standalone){#installTip{display:none!important}}
+footer a{color:var(--accent)}
+#redOverlay{position:fixed;inset:0;background:#ff0000;mix-blend-mode:multiply;pointer-events:none;display:none;z-index:100}
+body.red #redOverlay{display:block}
+</style>
+</head>
+<body>
+<div id="redOverlay"></div>
+<header>
+  <h1><span>★</span> 星空カレンダー</h1>
+  <select id="locSel" aria-label="観測地"></select>
+  <button class="btn" id="nowBtn" title="今の空を表示">今</button>
+  <button class="btn" id="redBtn" title="目を暗さに慣らしたまま見られる赤い表示">夜間モード</button>
+</header>
+<main>
+  <section id="forecast">
+    <h2>今週の星空予報</h2>
+    <div class="fcrow" id="fcRow"></div>
+    <p class="note" id="wxNote"></p>
+  </section>
+
+  <section id="day">
+    <div class="dayhead"><h2 id="dayTitle"></h2><span id="dayBadge"></span></div>
+    <div class="daygrid">
+      <div>
+        <div class="info" id="dayInfo"></div>
+        <div id="dayEvents"></div>
+      </div>
+      <div class="chartwrap">
+        <canvas id="sky" aria-label="星図"></canvas>
+        <div class="timebar">
+          <input type="range" id="timeSl" min="0" max="100" value="50" aria-label="時刻">
+          <span id="timeLbl"></span>
+        </div>
+        <div class="sub">上が北・左が東（空を見上げて頭の上にかざす向き）。星や惑星をタップすると名前が出ます。</div>
+        <div id="skyTip"></div>
+      </div>
+    </div>
+    <div class="pls" id="planets"></div>
+  </section>
+
+  <section id="calendar">
+    <div class="calhead">
+      <button class="btn" id="prevM" aria-label="前の月">‹</button>
+      <h2 id="calTitle"></h2>
+      <button class="btn" id="nextM" aria-label="次の月">›</button>
+      <button class="btn" id="todayM">今月</button>
+    </div>
+    <div class="cal" id="calGrid"></div>
+    <div class="legend">
+      <span><span class="tag c-meteor">流星群</span></span><span><span class="tag c-eclipse">日食・月食</span></span><span><span class="tag c-planet">惑星の見ごろ</span></span><span><span class="tag c-conj">接近</span></span><span><span class="tag c-season">季節</span></span><span><span class="ndot" style="background:var(--good)"></span> 予報：星がよく見える夜</span>
+    </div>
+  </section>
+
+  <section id="upcoming">
+    <div class="uphead"><h2>これからの天文現象（1年分）</h2><button class="btn" id="allBtn">すべて表示</button></div>
+    <div id="upList" class="sub">計算中…</div>
+  </section>
+</main>
+<footer>
+  月・惑星の位置はこの端末の中で計算しています（誤差は数分角、時刻は数分程度）。日食・月食・接近は概算です。正確な情報は<a href="https://eco.mtk.nao.ac.jp/koyomi/" target="_blank" rel="noopener">国立天文台 暦計算室</a>で確認してください。太陽は絶対に直接見ないでください。<br>
+  雲量予報：<a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>（観測地の緯度経度を送信します）。
+</footer>
+<div id="installTip" role="note"><button id="installX" aria-label="閉じる">×</button>📱 <b>アプリとして使う：</b>下の共有ボタン（□に↑）→「ホーム画面に追加」で、アイコンから全画面で開けます。</div>
+
+<script>
+'use strict';
+/* ===================== 天文計算（Paul Schlyter の方法をもとにした近似） ===================== */
+const RAD=Math.PI/180, DEG=180/Math.PI;
+const sind=x=>Math.sin(x*RAD), cosd=x=>Math.cos(x*RAD);
+const asind=x=>Math.asin(Math.max(-1,Math.min(1,x)))*DEG, acosd=x=>Math.acos(Math.max(-1,Math.min(1,x)))*DEG;
+const atan2d=(y,x)=>Math.atan2(y,x)*DEG;
+const rev=x=>((x%360)+360)%360;
+const norm180=x=>{x=rev(x);return x>180?x-360:x;};
+const MIN=60000, HOUR=3600000, DAY=86400000;
+const dOf=t=>t/DAY-10956;            // 2000年1月0日0時UTからの日数
+const oblq=d=>23.4393-3.563e-7*d;
+const PREC=3.8246e-5;                 // 歳差（黄経, 度/日）
+const gmst=d=>rev(280.46061837+360.98564736629*(d-1.5));
+
+function kepler(M,e){
+  let E=M+DEG*e*sind(M)*(1+e*cosd(M));
+  for(let k=0;k<30;k++){const dE=(E-DEG*e*sind(E)-M)/(1-e*cosd(E));E-=dE;if(Math.abs(dE)<1e-7)break;}
+  return E;
+}
+function orbit(N,i,w,a,e,M){
+  M=rev(M);const E=kepler(M,e);
+  const xv=a*(cosd(E)-e), yv=a*Math.sqrt(1-e*e)*sind(E);
+  const v=atan2d(yv,xv), r=Math.hypot(xv,yv), vw=v+w;
+  const x=r*(cosd(N)*cosd(vw)-sind(N)*sind(vw)*cosd(i));
+  const y=r*(sind(N)*cosd(vw)+cosd(N)*sind(vw)*cosd(i));
+  const z=r*sind(vw)*sind(i);
+  return {x,y,z,r,lon:rev(atan2d(y,x)),lat:atan2d(z,Math.hypot(x,y))};
+}
+function eclRectToEq(x,y,z,d){
+  const ec=oblq(d);
+  const xe=x, ye=y*cosd(ec)-z*sind(ec), ze=y*sind(ec)+z*cosd(ec);
+  return {ra:rev(atan2d(ye,xe)),dec:atan2d(ze,Math.hypot(xe,ye)),xe,ye,ze};
+}
+const eclToEq=(L,B,d)=>eclRectToEq(cosd(B)*cosd(L),cosd(B)*sind(L),sind(B),d);
+function precess(ra,dec,d){ // J2000 赤道座標 → その日の赤道座標
+  const e0=23.4393, x=cosd(dec)*cosd(ra), y=cosd(dec)*sind(ra), z=sind(dec);
+  const ye=y*cosd(e0)+z*sind(e0), ze=-y*sind(e0)+z*cosd(e0);
+  return eclToEq(atan2d(ye,x)+PREC*(d-1.5),asind(ze),d);
+}
+function sunPos(d){
+  const w=282.9404+4.70935e-5*d, e=0.016709-1.151e-9*d, M=rev(356.0470+0.9856002585*d);
+  const E=kepler(M,e), xv=cosd(E)-e, yv=Math.sqrt(1-e*e)*sind(E);
+  const r=Math.hypot(xv,yv), lon=rev(atan2d(yv,xv)+w);
+  return {lon,r,M,w,x:r*cosd(lon),y:r*sind(lon)};
+}
+const ELEM={
+  mercury:d=>[48.3313+3.24587e-5*d,7.0047+5.00e-8*d,29.1241+1.01444e-5*d,0.387098,0.205635+5.59e-10*d,168.6562+4.0923344368*d],
+  venus:d=>[76.6799+2.46590e-5*d,3.3946+2.75e-8*d,54.8910+1.38374e-5*d,0.723330,0.006773-1.302e-9*d,48.0052+1.6021302244*d],
+  mars:d=>[49.5574+2.11081e-5*d,1.8497-1.78e-8*d,286.5016+2.92961e-5*d,1.523688,0.093405+2.516e-9*d,18.6021+0.5240207766*d],
+  jupiter:d=>[100.4542+2.76854e-5*d,1.3030-1.557e-7*d,273.8777+1.64505e-5*d,5.20256,0.048498+4.469e-9*d,19.8950+0.0830853001*d],
+  saturn:d=>[113.6634+2.38980e-5*d,2.4886-1.081e-7*d,339.3939+2.97661e-5*d,9.55475,0.055546-9.499e-9*d,316.9670+0.0334442282*d],
+};
+function planetPos(n,d,S){
+  S=S||sunPos(d);
+  let h=orbit(...ELEM[n](d));
+  if(n==='jupiter'||n==='saturn'){
+    const Mj=rev(19.8950+0.0830853001*d), Ms=rev(316.9670+0.0334442282*d);
+    let dl,db=0;
+    if(n==='jupiter') dl=-0.332*sind(2*Mj-5*Ms-67.6)-0.056*sind(2*Mj-2*Ms+21)+0.042*sind(3*Mj-5*Ms+21)-0.036*sind(Mj-2*Ms)+0.022*cosd(Mj-Ms)+0.023*sind(2*Mj-3*Ms+52)-0.016*sind(Mj-5*Ms-69);
+    else{dl=0.812*sind(2*Mj-5*Ms-67.6)-0.229*cosd(2*Mj-4*Ms-2)+0.119*sind(Mj-2*Ms-3)+0.046*sind(2*Mj-6*Ms-69)+0.014*sind(Mj-3*Ms+32);db=-0.020*cosd(2*Mj-4*Ms-2)+0.018*sind(2*Mj-6*Ms-49);}
+    const lon=h.lon+dl, lat=h.lat+db, r=h.r;
+    h={x:r*cosd(lat)*cosd(lon),y:r*cosd(lat)*sind(lon),z:r*sind(lat),r};
+  }
+  const xg=h.x+S.x, yg=h.y+S.y, zg=h.z, R=Math.hypot(xg,yg,zg);
+  const glon=rev(atan2d(yg,xg)), glat=atan2d(zg,Math.hypot(xg,yg));
+  const eq=eclRectToEq(xg,yg,zg,d);
+  const FV=acosd((h.r*h.r+R*R-S.r*S.r)/(2*h.r*R));
+  const elong=acosd((S.r*S.r+R*R-h.r*h.r)/(2*S.r*R));
+  const lg=5*Math.log10(h.r*R);
+  let mag;
+  if(n==='mercury') mag=-0.36+lg+0.027*FV+2.2e-13*Math.pow(FV,6);
+  else if(n==='venus') mag=-4.34+lg+0.013*FV+4.2e-7*Math.pow(FV,3);
+  else if(n==='mars') mag=-1.51+lg+0.016*FV;
+  else if(n==='jupiter') mag=-9.25+lg+0.014*FV;
+  else{const ir=28.06,Nr=169.51+3.82e-5*d,B=asind(sind(glat)*cosd(ir)-cosd(glat)*sind(ir)*sind(glon-Nr));mag=-9.0+lg+0.044*FV-2.6*sind(Math.abs(B))+1.2*Math.pow(sind(B),2);}
+  return {n,ra:eq.ra,dec:eq.dec,lon:glon,lat:glat,dist:R,elong,mag};
+}
+function moonPos(d,S){
+  S=S||sunPos(d);
+  const N=125.1228-0.0529538083*d, w=318.0634+0.1643573223*d, M=rev(115.3654+13.0649929509*d);
+  const o=orbit(N,5.1454,w,60.2666,0.054900,M);
+  const Ms=S.M, Mm=M, Ls=rev(S.M+S.w), Lm=rev(M+w+N), D=Lm-Ls, F=Lm-N;
+  const lon=rev(o.lon-1.274*sind(Mm-2*D)+0.658*sind(2*D)-0.186*sind(Ms)-0.059*sind(2*Mm-2*D)-0.057*sind(Mm-2*D+Ms)+0.053*sind(Mm+2*D)+0.046*sind(2*D-Ms)+0.041*sind(Mm-Ms)-0.035*sind(D)-0.031*sind(Mm+Ms)-0.015*sind(2*F-2*D)+0.011*sind(Mm-4*D));
+  const lat=o.lat-0.173*sind(F-2*D)-0.055*sind(Mm-F-2*D)-0.046*sind(Mm+F-2*D)+0.033*sind(F+2*D)+0.017*sind(2*Mm+F);
+  const r=o.r-0.58*cosd(Mm-2*D)-0.46*cosd(2*D);
+  const eq=eclRectToEq(r*cosd(lat)*cosd(lon),r*cosd(lat)*sind(lon),r*sind(lat),d);
+  const el=acosd(cosd(lat)*cosd(lon-S.lon));
+  return {lon,lat,r,ra:eq.ra,dec:eq.dec,xe:eq.xe,ye:eq.ye,ze:eq.ze,illum:(1-cosd(el))/2,phase:rev(lon-S.lon)};
+}
+function moonTopo(m,obs,lst){ // 観測地から見た月（視差補正）
+  const gclat=obs.lat-0.1924*sind(2*obs.lat), rho=0.99833+0.00167*cosd(2*obs.lat);
+  const x=m.xe-rho*cosd(gclat)*cosd(lst), y=m.ye-rho*cosd(gclat)*sind(lst), z=m.ze-rho*sind(gclat);
+  return {ra:rev(atan2d(y,x)),dec:atan2d(z,Math.hypot(x,y)),dist:Math.hypot(x,y,z)};
+}
+function horiz(ra,dec,lst,lat){
+  const H=lst-ra;
+  const alt=asind(sind(lat)*sind(dec)+cosd(lat)*cosd(dec)*cosd(H));
+  const az=rev(atan2d(-cosd(dec)*sind(H),sind(dec)*cosd(lat)-cosd(dec)*cosd(H)*sind(lat)));
+  return {alt,az};
+}
+const sepDeg=(a1,d1,a2,d2)=>acosd(sind(d1)*sind(d2)+cosd(d1)*cosd(d2)*cosd(a1-a2));
+
+/* ---------- 探索ヘルパー ---------- */
+function bisect(g,a,b,ga,n){for(let i=0;i<n;i++){const c=(a+b)/2,gc=g(c);if((gc<0)===(ga<0)){a=c;ga=gc;}else b=c;}return (a+b)/2;}
+function crossings(fn,t0,t1,h0,step){
+  const out=[];let ta=t0,fa=fn(t0)-h0;
+  for(let tb=t0+step;tb<=t1+1;tb+=step){
+    const fb=fn(tb)-h0;
+    if((fa<0)!==(fb<0)) out.push({t:bisect(t=>fn(t)-h0,ta,tb,fa,12),up:fa<0});
+    ta=tb;fa=fb;
+  }
+  return out;
+}
+function angleRoots(f,targets,ta,tb,step){ // f(t) が target 角を横切る時刻
+  const out=[];let pa=f(ta);
+  for(let a=ta;a<tb;a+=step){
+    const b=Math.min(a+step,tb), pb=f(b);
+    targets.forEach((tg,idx)=>{
+      const ga=norm180(pa-tg), gb=norm180(pb-tg);
+      if(Math.abs(ga)<90&&Math.abs(gb)<90&&((ga<0)!==(gb<0))) out.push({t:bisect(t=>norm180(f(t)-tg),a,b,ga,24),idx});
+    });
+    pa=pb;
+  }
+  return out.sort((x,y)=>x.t-y.t);
+}
+function golden(f,a,b,iter=40){ // f の最大
+  const gr=(Math.sqrt(5)-1)/2;let c=b-gr*(b-a),d=a+gr*(b-a),fc=f(c),fd=f(d);
+  for(let i=0;i<iter;i++){if(fc>fd){b=d;d=c;fd=fc;c=b-gr*(b-a);fc=f(c);}else{a=c;c=d;fc=fd;d=a+gr*(b-a);fd=f(d);}}
+  return (a+b)/2;
+}
+
+/* ===================== 観測地・データ ===================== */
+const LOCS=[['札幌',43.062,141.354],['仙台',38.268,140.869],['東京',35.681,139.767],['名古屋',35.182,136.907],['大阪',34.694,135.502],['広島',34.385,132.455],['福岡',33.590,130.402],['鹿児島',31.596,130.557],['那覇',26.212,127.681]];
+let OBS=(()=>{try{const o=JSON.parse(localStorage.getItem('hoshizora.obs'));if(o&&isFinite(o.lat)&&isFinite(o.lon))return o;}catch(e){}return {name:'東京',lat:35.681,lon:139.767};})();
+const obsKey=()=>OBS.lat.toFixed(3)+','+OBS.lon.toFixed(3);
+const lstOf=d=>rev(gmst(d)+OBS.lon);
+
+const PLANETS=['mercury','venus','mars','jupiter','saturn'];
+const PJ={mercury:'水星',venus:'金星',mars:'火星',jupiter:'木星',saturn:'土星'};
+const PCOL={mercury:'#cfc8b8',venus:'#fff4c8',mars:'#ff8a5c',jupiter:'#ffe0a8',saturn:'#f2da94'};
+const SHOWERS=[
+  {name:'しぶんぎ座流星群',lon:283.15,zhr:110,ra:230,dec:49,major:1},
+  {name:'4月こと座流星群',lon:32.32,zhr:18,ra:271,dec:34},
+  {name:'みずがめ座η流星群',lon:45.5,zhr:50,ra:338,dec:-1},
+  {name:'みずがめ座δ南流星群',lon:125,zhr:25,ra:340,dec:-16},
+  {name:'ペルセウス座流星群',lon:140.0,zhr:100,ra:48,dec:58,major:1},
+  {name:'10月りゅう座流星群',lon:195.4,zhr:10,ra:262,dec:54},
+  {name:'オリオン座流星群',lon:208,zhr:20,ra:95,dec:16},
+  {name:'しし座流星群',lon:235.27,zhr:15,ra:152,dec:22},
+  {name:'ふたご座流星群',lon:262.2,zhr:150,ra:112,dec:33,major:1},
+  {name:'こぐま座流星群',lon:270.7,zhr:10,ra:217,dec:76},
+];
+// [id, 表示名, 赤経(時), 赤緯(度), 等級]  J2000
+const STARS=[
+['sirius','シリウス',6.7525,-16.716,-1.46],['canopus','カノープス',6.3992,-52.696,-0.74],['arcturus','アルクトゥルス',14.2610,19.182,-0.05],
+['vega','ベガ（織姫）',18.6156,38.784,0.03],['capella','カペラ',5.2782,45.998,0.08],['rigel','リゲル',5.2423,-8.202,0.13],
+['procyon','プロキオン',7.6550,5.225,0.34],['betelgeuse','ベテルギウス',5.9195,7.407,0.50],['altair','アルタイル（彦星）',19.8464,8.868,0.77],
+['aldebaran','アルデバラン',4.5987,16.509,0.85],['antares','アンタレス',16.4901,-26.432,0.96],['spica','スピカ',13.4199,-11.161,0.97],
+['pollux','ポルックス',7.7553,28.026,1.14],['fomalhaut','フォーマルハウト',22.9608,-29.622,1.16],['deneb','デネブ',20.6905,45.280,1.25],
+['regulus','レグルス',10.1395,11.967,1.35],['castor','カストル',7.5767,31.888,1.58],['polaris','北極星',2.5303,89.264,1.98],['alcyone','すばる',3.7914,24.105,2.87],
+['adhara','',6.9771,-28.972,1.50],['shaula','',17.5601,-37.104,1.62],['bellatrix','',5.4189,6.350,1.64],['elnath','',5.4382,28.608,1.65],
+['alnilam','',5.6036,-1.202,1.69],['alnitak','',5.6793,-1.943,1.77],['mintaka','',5.5334,-0.299,2.23],['saiph','',5.7959,-9.670,2.09],
+['alioth','',12.9005,55.960,1.77],['dubhe','',11.0621,61.751,1.79],['merak','',11.0307,56.383,2.37],['phecda','',11.8972,53.695,2.44],
+['megrez','',12.2571,57.033,3.31],['mizar','',13.3988,54.925,2.23],['alkaid','',13.7923,49.313,1.86],['mirfak','',3.4054,49.861,1.79],
+['alphard','',9.4598,-8.659,1.98],['hamal','',2.1196,23.463,2.00],['diphda','',0.7265,-17.987,2.04],['alpheratz','',0.1398,29.091,2.06],
+['mirach','',1.1622,35.621,2.05],['almach','',2.0650,42.330,2.10],['kochab','',14.8451,74.156,2.08],['pherkad','',15.3455,71.834,3.05],
+['rasalhague','',17.5822,12.560,2.08],['denebola','',11.8177,14.572,2.13],['algieba','',10.3329,19.842,2.08],['zosma','',11.2351,20.524,2.56],
+['chertan','',11.2373,15.429,3.33],['etaleo','',10.1222,16.763,3.49],['adhafera','',10.2782,23.417,3.43],['rasalas','',9.8794,26.007,3.88],
+['epsleo','',9.7642,23.774,2.98],['algol','',3.1361,40.956,2.1],['schedar','',0.6751,56.537,2.24],['caph','',0.1530,59.150,2.28],
+['navi','',0.9451,60.717,2.47],['ruchbah','',1.4303,60.235,2.68],['segin','',1.9066,63.670,3.37],['sadr','',20.3705,40.257,2.23],
+['albireo','',19.5120,27.960,3.08],['gienahcyg','',20.7702,33.970,2.48],['deltacyg','',19.7496,45.131,2.87],['sheliak','',18.8347,33.363,3.52],
+['sulafat','',18.9824,32.690,3.24],['tarazed','',19.7710,10.613,2.72],['alshain','',19.9219,6.407,3.71],['enif','',21.7364,9.875,2.38],
+['markab','',23.0794,15.205,2.49],['scheat','',23.0629,28.083,2.42],['algenib','',0.2206,15.184,2.83],['menkalinan','',5.9921,44.948,1.90],
+['thetaaur','',5.9954,37.213,2.62],['hassaleh','',4.9499,33.166,2.69],['alhena','',6.6285,16.399,1.93],['mirzam','',6.3783,-17.956,1.98],
+['wezen','',7.1399,-26.393,1.83],['aludra','',7.4016,-29.303,2.45],['menkar','',3.0380,4.090,2.54],['zubenelgenubi','',14.8480,-16.042,2.75],
+['dschubba','',16.0056,-22.622,2.32],['acrab','',16.0906,-19.805,2.62],['pisco','',15.9809,-26.114,2.89],['sigsco','',16.3531,-25.593,2.89],
+['tausco','',16.5980,-28.216,2.82],['epssco','',16.8361,-34.293,2.29],['mu1sco','',16.8645,-38.048,3.04],['zet2sco','',16.9097,-42.361,3.62],
+['etasco','',17.2025,-43.239,3.33],['sargas','',17.6220,-42.998,1.86],['iotsco','',17.7931,-40.127,2.99],['kapsco','',17.7081,-39.030,2.39],
+['lesath','',17.5127,-37.296,2.70],['kausaus','',18.4029,-34.385,1.85],['kausmed','',18.3499,-29.828,2.70],['kausbor','',18.4662,-25.422,2.81],
+['phisgr','',18.7609,-26.991,3.17],['nunki','',18.9211,-26.297,2.05],['tausgr','',19.1157,-27.670,3.32],['ascella','',19.0435,-29.880,2.60],
+['gamsgr','',18.0968,-30.424,2.99],['izar','',14.7498,27.074,2.37],['muphrid','',13.9114,18.398,2.68],['seginus','',14.5346,38.308,3.03],
+['deltaboo','',15.2584,33.315,3.47],['nekkar','',15.0325,40.391,3.49],['alphecca','',15.5781,26.715,2.23],['gienahcrv','',12.2634,-17.542,2.59],
+['kraz','',12.5731,-23.397,2.65],['algorab','',12.4977,-16.516,2.95],['minkar','',12.1688,-22.620,3.00],['sheratan','',1.9107,20.808,2.64],
+];
+const STAR_COL={antares:'#ffb08a',betelgeuse:'#ffb890',aldebaran:'#ffc79a',arcturus:'#ffd6a6',rigel:'#cfe0ff',spica:'#cfe0ff',vega:'#e0ebff',sirius:'#e6efff',alcyone:'#cfe0ff'};
+const LINES=[
+['betelgeuse','bellatrix'],['betelgeuse','alnitak'],['bellatrix','mintaka'],['mintaka','alnilam'],['alnilam','alnitak'],['alnitak','saiph'],['mintaka','rigel'],
+['dubhe','merak'],['merak','phecda'],['phecda','megrez'],['megrez','dubhe'],['megrez','alioth'],['alioth','mizar'],['mizar','alkaid'],
+['caph','schedar'],['schedar','navi'],['navi','ruchbah'],['ruchbah','segin'],
+['deneb','sadr'],['sadr','albireo'],['gienahcyg','sadr'],['sadr','deltacyg'],
+['vega','sheliak'],['sheliak','sulafat'],['sulafat','vega'],['tarazed','altair'],['altair','alshain'],
+['acrab','dschubba'],['dschubba','pisco'],['dschubba','sigsco'],['sigsco','antares'],['antares','tausco'],['tausco','epssco'],['epssco','mu1sco'],['mu1sco','zet2sco'],['zet2sco','etasco'],['etasco','sargas'],['sargas','iotsco'],['iotsco','kapsco'],['kapsco','shaula'],['shaula','lesath'],
+['gamsgr','kausmed'],['kausmed','kausaus'],['kausaus','gamsgr'],['kausmed','kausbor'],['kausbor','phisgr'],['phisgr','kausmed'],['phisgr','nunki'],['nunki','tausgr'],['tausgr','ascella'],['ascella','phisgr'],['ascella','kausaus'],
+['regulus','etaleo'],['etaleo','algieba'],['algieba','adhafera'],['adhafera','rasalas'],['rasalas','epsleo'],['algieba','zosma'],['zosma','denebola'],['denebola','chertan'],['chertan','regulus'],['zosma','chertan'],
+['alpheratz','scheat'],['scheat','markab'],['markab','algenib'],['algenib','alpheratz'],['markab','enif'],['alpheratz','mirach'],['mirach','almach'],
+['castor','pollux'],['capella','menkalinan'],['menkalinan','thetaaur'],['thetaaur','elnath'],['elnath','hassaleh'],['hassaleh','capella'],
+['mirzam','sirius'],['sirius','wezen'],['wezen','adhara'],['wezen','aludra'],
+['arcturus','izar'],['izar','deltaboo'],['deltaboo','nekkar'],['nekkar','seginus'],['seginus','arcturus'],
+['gienahcrv','algorab'],['algorab','kraz'],['kraz','minkar'],['minkar','gienahcrv'],
+];
+const TRIANGLES=[['vega','deneb'],['deneb','altair'],['altair','vega'],['betelgeuse','sirius'],['sirius','procyon'],['procyon','betelgeuse']];
+const CONSTS=[['オリオン座',['betelgeuse','rigel','alnilam','bellatrix','saiph']],['北斗七星',['dubhe','merak','phecda','megrez','alioth','mizar','alkaid']],['カシオペヤ座',['caph','schedar','navi','ruchbah','segin']],['はくちょう座',['deneb','sadr','albireo','gienahcyg','deltacyg']],['さそり座',['antares','dschubba','epssco','shaula','sargas']],['いて座',['kausaus','nunki','phisgr','kausbor']],['しし座',['regulus','denebola','algieba','zosma']],['ペガスス座',['alpheratz','scheat','markab','algenib']],['ぎょしゃ座',['capella','menkalinan','elnath','thetaaur','hassaleh']],['うしかい座',['arcturus','izar','seginus','nekkar']],['おおいぬ座',['sirius','mirzam','wezen','adhara']],['こと座',['vega','sheliak','sulafat']],['ふたご座',['castor','pollux']]];
+
+/* ---------- 便利関数 ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const WD='日月火水木金土';
+const DIRS=['北','北北東','北東','東北東','東','東南東','南東','南南東','南','南南西','南西','西南西','西','西北西','北西','北北西'];
+const dirName=az=>DIRS[Math.round(rev(az)/22.5)%16];
+function localMidnight(t){const d=new Date(t);return new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();}
+function addDays(t,n){const d=new Date(t);return new Date(d.getFullYear(),d.getMonth(),d.getDate()+n).getTime();}
+function nightOf(t){const d=new Date(t);const m=localMidnight(t);return d.getHours()<6?addDays(m,-1):m;}
+function tonightDate(){return nightOf(Date.now());}
+function fmtDate(t,withYear){const d=new Date(t);return (withYear?d.getFullYear()+'/':'')+(d.getMonth()+1)+'/'+d.getDate()+'('+WD[d.getDay()]+')';}
+function hm(t){const d=new Date(Math.round(t/MIN)*MIN);return d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');}
+function hmRel(t,base){if(t==null)return '—';const m=localMidnight(Math.round(t/MIN)*MIN);return (m>base?'翌':m<base?'前日':'')+hm(t);}
+function durText(ms){const m=Math.round(ms/MIN/10)*10;const h=Math.floor(m/60),mm=m%60;return h?(h+'時間'+(mm?mm+'分':'')):mm+'分';}
+function timeWord(t){const h=new Date(t).getHours();return h>=15&&h<21?'夕方〜宵':(h>=21||h<2)?'夜半':'明け方';}
+function moonCount(sep){return Math.max(1,Math.round(sep/0.5));}
+
+function sunAltAt(t){const d=dOf(t),S=sunPos(d),e=eclRectToEq(S.x,S.y,0,d);return horiz(e.ra,e.dec,lstOf(d),OBS.lat).alt;}
+function moonAt(t){const d=dOf(t),S=sunPos(d),m=moonPos(d,S),lst=lstOf(d),tp=moonTopo(m,OBS,lst),h=horiz(tp.ra,tp.dec,lst,OBS.lat);return {alt:h.alt,az:h.az,illum:m.illum,phase:m.phase,r:m.r};}
+function moonPhaseAt(t){const d=dOf(t),S=sunPos(d);return rev(moonPos(d,S).lon-S.lon);}
+function moonAge(t){let tn=t-moonPhaseAt(t)/360*29.530589*DAY;for(let i=0;i<5;i++)tn-=norm180(moonPhaseAt(tn))/12.19*DAY;if(tn>t)tn-=29.530589*DAY;return (t-tn)/DAY;}
+function phaseName(p){return p<12||p>348?'新月':p<80?'三日月〜若い月':p<100?'上弦の月':p<168?'満ちていく月':p<192?'満月':p<260?'欠けていく月':p<280?'下弦の月':'明け方の細い月';}
+
+/* ---------- 月の形（SVG パス） ---------- */
+function moonPathD(k,right,r,cx,cy){
+  if(k>0.985) return `M${cx-r},${cy}A${r},${r} 0 1 0 ${cx+r},${cy}A${r},${r} 0 1 0 ${cx-r},${cy}Z`;
+  if(k<0.015) return '';
+  const rx=r*Math.abs(1-2*k), top=`${cx},${cy-r}`, bot=`${cx},${cy+r}`;
+  return right?`M${top}A${r},${r} 0 0 1 ${bot}A${rx},${r} 0 0 ${k<0.5?0:1} ${top}Z`
+              :`M${top}A${r},${r} 0 0 0 ${bot}A${rx},${r} 0 0 ${k<0.5?1:0} ${top}Z`;
+}
+function moonSVG(phase,size){
+  const k=(1-cosd(phase))/2, r=size/2-1, c=size/2;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true"><circle cx="${c}" cy="${c}" r="${r}" fill="#2b3357"/><path d="${moonPathD(k,phase<180,r,c,c)}" fill="#f5efd2"/></svg>`;
+}
+
+/* ===================== 天気（雲量） ===================== */
+let WX=null, WX_STATE='loading';
+function cloudAt(t){if(!WX)return null;const v=WX.map[Math.round(t/HOUR)*HOUR];return v==null?null:v;}
+async function loadWeather(){
+  const key='hoshizora.wx.'+obsKey();
+  try{const c=JSON.parse(localStorage.getItem(key));if(c&&Date.now()-c.at<60*MIN){WX=c;WX_STATE='ok';return;}}catch(e){}
+  WX_STATE='loading';
+  try{
+    const u=`https://api.open-meteo.com/v1/forecast?latitude=${OBS.lat.toFixed(2)}&longitude=${OBS.lon.toFixed(2)}&hourly=cloud_cover&forecast_days=8&timeformat=unixtime`;
+    const r=await fetch(u);if(!r.ok)throw new Error(r.status);
+    const j=await r.json();const map={};
+    j.hourly.time.forEach((s,i)=>{const v=j.hourly.cloud_cover[i];if(v!=null)map[s*1000]=v;});
+    WX={at:Date.now(),map};WX_STATE='ok';
+    try{localStorage.setItem(key,JSON.stringify(WX));}catch(e){}
+  }catch(e){WX=null;WX_STATE='error';}
+}
+
+/* ===================== 夜ごとの条件 ===================== */
+const NIGHT=new Map();
+function nightData(day){
+  const key=day+'|'+obsKey()+'|'+(WX?WX.at:0);
+  if(NIGHT.has(key))return NIGHT.get(key);
+  const d0=new Date(day),y=d0.getFullYear(),mo=d0.getMonth(),da=d0.getDate();
+  const t0=new Date(y,mo,da,12).getTime(), t1=new Date(y,mo,da+1,12).getTime();
+  const ts=[],sA=[],mA=[];
+  for(let t=t0;t<=t1;t+=10*MIN){ts.push(t);sA.push(sunAltAt(t));mA.push(moonAt(t).alt);}
+  const cross=(arr,h,fn)=>{const o=[];for(let i=1;i<ts.length;i++){const a=arr[i-1]-h,b=arr[i]-h;if((a<0)!==(b<0))o.push({t:bisect(t=>fn(t)-h,ts[i-1],ts[i],a,12),up:a<0});}return o;};
+  const sev=h=>{const c=cross(sA,h,sunAltAt);return {down:(c.find(x=>!x.up)||{}).t,up:(c.find(x=>x.up)||{}).t};};
+  const s0=sev(-0.833),s6=sev(-6),s18=sev(-18);
+  const moonEv=cross(mA,-0.833,t=>moonAt(t).alt);
+  const mid=new Date(y,mo,da+1,0).getTime(), mm=moonAt(mid);
+  const illum=mm.illum, phase=mm.phase;
+  const thr=sA.some(v=>v<-18)?-18:sA.some(v=>v<-12)?-12:-6;
+  let dark=0,moonless=0,q=0,cs=0,cn=0,cur=null;const iv=[];
+  for(let i=0;i<ts.length;i++){
+    if(sA[i]<thr){
+      dark++;
+      const up=mA[i]>-0.833&&illum>0.03;
+      const pen=up?Math.min(1,0.15+0.85*illum)*(mA[i]>10?1:0.6):0;
+      q+=1-0.85*pen;
+      if(!up){moonless++;if(!cur){cur={s:ts[i],e:ts[i]+10*MIN};iv.push(cur);}else cur.e=ts[i]+10*MIN;}else cur=null;
+      const c=cloudAt(ts[i]);if(c!=null){cs+=c;cn++;}
+    }else cur=null;
+  }
+  const moonQ=dark?q/dark:0;
+  const cloud=(cn&&cn>=dark*0.5)?cs/cn:null;
+  const score=moonQ*(cloud==null?1:Math.max(0,1-cloud/100));
+  const nd={day,t0,t1,ts,sA,mA,thr,sset:s0.down,srise:s0.up,cdusk:s6.down,cdawn:s6.up,adusk:s18.down,adawn:s18.up,
+    moonEv,illum,phase,age:moonAge(new Date(y,mo,da,12).getTime()),darkMs:dark*10*MIN,moonlessMs:moonless*10*MIN,iv,cloud,moonQ,score};
+  NIGHT.set(key,nd);return nd;
+}
+function rating(nd){
+  const s=nd.score;
+  if(nd.cloud!=null&&nd.cloud>=80) return {mark:'×',text:'曇り予報',cls:'r-bad'};
+  if(s>=0.75) return {mark:'◎',text:'好条件',cls:'r-good'};
+  if(s>=0.5) return {mark:'○',text:'まずまず',cls:'r-ok'};
+  if(s>=0.3) return {mark:'△',text:'いまいち',cls:'r-meh'};
+  return {mark:'×',text:nd.cloud!=null&&nd.cloud>=55?'雲が多い':'月明かりが強い',cls:'r-bad'};
+}
+const starStr=s=>{const n=Math.max(0,Math.min(5,Math.round(s*5)));return '★'.repeat(n)+'☆'.repeat(5-n);};
+
+function planetsNight(nd){
+  if(nd.planets)return nd.planets;
+  const d=dOf(nd.t0+12*HOUR),S=sunPos(d);
+  nd.planets=PLANETS.map(n=>{
+    const p=planetPos(n,d,S), altAt=t=>horiz(p.ra,p.dec,lstOf(dOf(t)),OBS.lat);
+    const iv=[];let cur=null,best=null;
+    nd.ts.forEach((t,i)=>{const h=altAt(t);const ok=nd.sA[i]<-6&&h.alt>5;
+      if(ok){if(!cur){cur={s:t,e:t};iv.push(cur);}else cur.e=t;if(!best||h.alt>best.alt)best={t,alt:h.alt,az:h.az};}else cur=null;});
+    return {n,p,iv,best};
+  });
+  return nd.planets;
+}
+function visText(pl,nd){
+  if(!pl.iv.length) return pl.p.elong<18?'太陽に近く、今は見えません':'夜のあいだは地平線の下です';
+  const s=pl.iv[0].s,e=pl.iv[pl.iv.length-1].e;
+  const fromDusk=nd.cdusk&&s-nd.cdusk<20*MIN, toDawn=nd.cdawn&&nd.cdawn-e<20*MIN;
+  if(fromDusk&&toDawn) return 'ほぼ一晩中見えます';
+  if(fromDusk) return `宵の空（日の入り後〜${hmRel(e,nd.day)}頃）`;
+  if(toDawn) return `明け方の空（${hmRel(s,nd.day)}頃〜夜明け）`;
+  return `${hmRel(s,nd.day)}〜${hmRel(e,nd.day)}頃`;
+}
+const brightWord=m=>m<-3?'とても明るい':m<-1?'明るい':m<1?'1等星くらい':'少し暗め';
+
+/* ===================== 天文現象の計算 ===================== */
+const MONTH=new Map(), YFM=new Map();
+function yearFullMoons(Y){
+  if(YFM.has(Y))return YFM.get(Y);
+  const a=new Date(Y,0,1).getTime(),b=new Date(Y+1,0,1).getTime();
+  const fm=angleRoots(moonPhaseAt,[180],a,b,6*HOUR).filter(x=>x.t>=a&&x.t<b).map(x=>({t:x.t,r:moonPos(dOf(x.t)).r}));
+  let mx=fm[0],mn=fm[0];fm.forEach(f=>{if(f.r<mx.r)mx=f;if(f.r>mn.r)mn=f;});
+  const o={big:mx&&mx.t,small:mn&&mn.t};YFM.set(Y,o);return o;
+}
+function lunarEclipse(tFull){
+  if(Math.abs(moonPos(dOf(tFull)).lat)>1.7)return null;
+  const G=t=>{const d=dOf(t),S=sunPos(d),m=moonPos(d,S);const pm=asind(1/m.r),ss=0.2666/S.r,ps=0.00244/S.r;
+    return {g:acosd(cosd(m.lat)*cosd(m.lon-S.lon-180)),ru:1.02*(pm+ps-ss),rp:1.02*(pm+ps+ss),sm:asind(0.2725/m.r)};};
+  const tmax=golden(t=>-G(t).g,tFull-5*HOUR,tFull+5*HOUR),x=G(tmax);
+  if(x.g>=x.rp+x.sm)return null;
+  const par=x.g<x.ru+x.sm, tot=x.g<x.ru-x.sm;
+  const ct=fr=>{const c=crossings(t=>{const y=G(t);return y.g-fr(y);},tmax-5*HOUR,tmax+5*HOUR,0,5*MIN);return [(c.find(v=>!v.up)||{}).t,(c.find(v=>v.up)||{}).t];};
+  const [p1,p4]=ct(y=>y.rp+y.sm);
+  const [u1,u4]=par?ct(y=>y.ru+y.sm):[null,null];
+  const [u2,u3]=tot?ct(y=>y.ru-y.sm):[null,null];
+  const umag=(x.ru+x.sm-x.g)/(2*x.sm), pmag=(x.rp+x.sm-x.g)/(2*x.sm);
+  const a0=par?u1:p1,a1=par?u4:p4;let any=false;
+  for(let t=a0;t<=a1;t+=5*MIN)if(moonAt(t).alt>0){any=true;break;}
+  const altMax=moonAt(tmax).alt;
+  const type=tot?'皆既月食':par?'部分月食':'半影月食';
+  let det=tot?`欠け始め ${hm(u1)} → 皆既 ${hm(u2)}〜${hm(u3)} → 終わり ${hm(u4)}`:par?`部分食 ${hm(u1)}〜${hm(u4)}（最大 ${hm(tmax)}、食分${umag.toFixed(2)}）`:`月がわずかに暗くなる程度で目立ちません（半影食分${pmag.toFixed(2)}）`;
+  const vis=altMax>0?`この場所で見えます（最大のとき月の高さ${Math.round(altMax)}°）`:any?'月の出・月の入りの前後に一部だけ見えます':'この場所では月が地平線の下で見えません';
+  const lv=(par&&(altMax>0||any))?1:(par?2:(altMax>0?2:3));
+  return {t:tmax,cat:'eclipse',icon:'🌘',short:type.replace('月食','食'),title:type,detail:det+'。'+vis,lv,tf:'hm'};
+}
+function solarEclipseLocal(tNew){
+  if(Math.abs(moonPos(dOf(tNew)).lat)>1.6)return null;
+  const F=t=>{const d=dOf(t),S=sunPos(d),m=moonPos(d,S),lst=lstOf(d),tp=moonTopo(m,OBS,lst),se=eclRectToEq(S.x,S.y,0,d);
+    const sep=sepDeg(tp.ra,tp.dec,se.ra,se.dec),ss=0.2666/S.r,sm=asind(0.2725/tp.dist);return {sep,ss,sm,f:sep-(ss+sm),alt:horiz(se.ra,se.dec,lst,OBS.lat).alt};};
+  let best=null;for(let t=tNew-7*HOUR;t<=tNew+7*HOUR;t+=4*MIN){const x=F(t);if(!best||x.f<best.f)best={t,...x};}
+  if(best.f>=0)return null;
+  const tmax=golden(t=>-F(t).sep,best.t-5*MIN,best.t+5*MIN),x=F(tmax);
+  const c=crossings(t=>F(t).f,tmax-4*HOUR,tmax+4*HOUR,0,3*MIN);
+  const st=(c.find(v=>!v.up)||{}).t||tmax, en=(c.find(v=>v.up)||{}).t||tmax;
+  let up=false;for(let t=st;t<=en;t+=3*MIN)if(F(t).alt>-0.5){up=true;break;}
+  if(!up)return null;
+  const mag=(x.ss+x.sm-x.sep)/(2*x.ss);
+  const type=x.sep<Math.abs(x.sm-x.ss)?(x.sm>x.ss?'皆既日食':'金環日食'):'部分日食';
+  let note='';if(x.alt<0)note=F(st).alt<0?'（欠けたまま日の出）':'（欠けたまま日の入り）';
+  if(Math.abs(x.sep-Math.abs(x.sm-x.ss))<0.04)note+='。皆既・金環になる帯の境界付近のため、部分食になる可能性もあります';
+  return {t:tmax,cat:'eclipse',icon:'🌑',short:type.replace('日食','日食'),title:type+'（この場所で見える）',
+    detail:`${hm(st)}〜${hm(en)}、最大 ${hm(tmax)}（食分 約${mag.toFixed(2)}・概算）${note}。必ず日食グラスなどで観察を`,lv:1,tf:'hm'};
+}
+function meteorCond(s,tPeak){
+  const nd=nightData(nightOf(tPeak));
+  const rd=precess(s.ra,s.dec,dOf(tPeak));
+  let good=0,moonBad=0,f=null,l=null;
+  nd.ts.forEach((t,i)=>{if(nd.sA[i]<nd.thr){const a=horiz(rd.ra,rd.dec,lstOf(dOf(t)),OBS.lat).alt;if(a>20){good++;if(f==null)f=t;l=t;if(nd.mA[i]>0)moonBad++;}}});
+  if(!good)return {text:'この場所では放射点が低く、観察しにくい流星群です',ok:false};
+  const pen=moonBad/good*nd.illum;
+  const mt=pen<0.15?'月明かり ほぼなし ◎':pen<0.4?'月明かり 少しあり ○':`月明かりあり △（月齢${nd.age.toFixed(0)}）`;
+  return {text:`見ごろ ${hmRel(f,nd.day)}〜${hmRel(l+10*MIN,nd.day)}（${fmtDate(nd.day)}の夜）・${mt}・ZHR約${s.zhr}`,ok:true};
+}
+function bestView(tm,pair){
+  let best=null;
+  for(let t=tm-36*HOUR;t<=tm+36*HOUR;t+=20*MIN){
+    const r=pair(t);if(r.sunAlt>-7||r.a.alt<6||r.b.alt<6)continue;
+    if(!best||r.sep<best.sep)best={t,sep:r.sep,az:r.a.az,alt:r.a.alt};
+  }
+  return best;
+}
+const sunHz=(d,S,lst)=>{const e=eclRectToEq(S.x,S.y,0,d);return horiz(e.ra,e.dec,lst,OBS.lat).alt;};
+function pairMoonPlanet(n){return t=>{const d=dOf(t),S=sunPos(d),lst=lstOf(d),sa=sunHz(d,S,lst);if(sa>-7)return {sunAlt:sa};
+  const tp=moonTopo(moonPos(d,S),OBS,lst),p=planetPos(n,d,S);return {sunAlt:sa,a:horiz(tp.ra,tp.dec,lst,OBS.lat),b:horiz(p.ra,p.dec,lst,OBS.lat),sep:sepDeg(tp.ra,tp.dec,p.ra,p.dec)};};}
+function pairPlanets(n1,n2){return t=>{const d=dOf(t),S=sunPos(d),lst=lstOf(d),sa=sunHz(d,S,lst);if(sa>-6)return {sunAlt:sa};
+  const p=planetPos(n1,d,S),q=planetPos(n2,d,S);return {sunAlt:sa,a:horiz(p.ra,p.dec,lst,OBS.lat),b:horiz(q.ra,q.dec,lst,OBS.lat),sep:sepDeg(p.ra,p.dec,q.ra,q.dec)};};}
+
+function monthEvents(y,m){
+  const key=y+'-'+m+'|'+obsKey();
+  if(MONTH.has(key))return MONTH.get(key);
+  const t0=new Date(y,m,1).getTime(),t1=new Date(y,m+1,1).getTime(),inR=t=>t>=t0&&t<t1;
+  const ev=[];
+  // 月の満ち欠け・食
+  const names=['新月','上弦の月','満月','下弦の月'],icons=['🌑','🌓','🌕','🌗'];
+  angleRoots(moonPhaseAt,[0,90,180,270],t0-2*DAY,t1+2*DAY,6*HOUR).forEach(p=>{
+    if(inR(p.t)){
+      const e={t:p.t,cat:'moon',icon:icons[p.idx],short:names[p.idx].replace('の月',''),title:names[p.idx],detail:'',lv:3,tf:'hm'};
+      if(p.idx===2){const yf=yearFullMoons(new Date(p.t).getFullYear());
+        if(yf.big&&Math.abs(yf.big-p.t)<HOUR){e.title='満月（今年いちばん大きな満月）';e.detail='地球にいちばん近い満月。いわゆる「スーパームーン」';e.lv=2;e.short='大きな満月';}
+        else if(yf.small&&Math.abs(yf.small-p.t)<HOUR){e.title='満月（今年いちばん小さな満月）';e.detail='地球からいちばん遠い満月';}}
+      if(p.idx===0)e.detail='月明かりがなく、星を見るチャンス';
+      ev.push(e);
+    }
+    if(p.idx===2){const le=lunarEclipse(p.t);if(le&&inR(le.t))ev.push(le);}
+    if(p.idx===0){const se=solarEclipseLocal(p.t);if(se&&inR(se.t))ev.push(se);}
+  });
+  // 季節
+  const sn=[['春分','🌸','昼と夜の長さがほぼ同じ'],['夏至','☀️','昼がいちばん長い日'],['秋分','🍁','昼と夜の長さがほぼ同じ'],['冬至','❄️','昼がいちばん短い日']];
+  angleRoots(t=>sunPos(dOf(t)).lon,[0,90,180,270],t0-DAY,t1+DAY,DAY).forEach(p=>{if(inR(p.t))ev.push({t:p.t,cat:'season',icon:sn[p.idx][1],short:sn[p.idx][0],title:sn[p.idx][0],detail:sn[p.idx][2],lv:2,tf:'hour'});});
+  // 流星群
+  angleRoots(t=>{const d=dOf(t);return sunPos(d).lon-PREC*(d-1.5);},SHOWERS.map(s=>s.lon),t0-DAY,t1+DAY,DAY).forEach(p=>{
+    if(!inR(p.t))return;const s=SHOWERS[p.idx],c=meteorCond(s,p.t);
+    ev.push({t:p.t,cat:'meteor',icon:'☄️',short:s.name.replace('流星群',''),title:s.name+'が極大',detail:c.text,lv:s.major?1:(c.ok?2:3),tf:'hour'});
+  });
+  // 外惑星の衝
+  ['mars','jupiter','saturn'].forEach(n=>{
+    angleRoots(t=>{const d=dOf(t),S=sunPos(d);return planetPos(n,d,S).lon-S.lon;},[180],t0-DAY,t1+DAY,DAY).forEach(p=>{
+      if(!inR(p.t))return;const pl=planetPos(n,dOf(p.t));
+      ev.push({t:p.t,cat:'planet',icon:'🪐',short:PJ[n]+'が衝',title:PJ[n]+'が衝（いちばんの見ごろ）',detail:`一晩中見えて、明るさは${pl.mag.toFixed(1)}等。前後1か月くらいが見ごろ`,lv:n==='mars'?1:2,tf:'date'});
+    });
+  });
+  // 水星・金星の最大離角
+  ['mercury','venus'].forEach(n=>{
+    const f=t=>planetPos(n,dOf(t)).elong, arr=[];
+    for(let t=t0-3*DAY;t<=t1+3*DAY;t+=DAY)arr.push([t,f(t)]);
+    for(let i=1;i<arr.length-1;i++){
+      if(arr[i][1]>arr[i-1][1]&&arr[i][1]>=arr[i+1][1]){
+        const tm=golden(f,arr[i-1][0],arr[i+1][0],30);if(!inR(tm))continue;
+        const d=dOf(tm),S=sunPos(d),pl=planetPos(n,d,S),east=norm180(pl.lon-S.lon)>0;
+        ev.push({t:tm,cat:'planet',icon:'🪐',short:PJ[n]+(east?'東方':'西方')+'最大離角',title:`${PJ[n]}が${east?'東方':'西方'}最大離角`,
+          detail:`太陽から${pl.elong.toFixed(0)}°離れ、${east?'夕方の西の空':'明け方の東の空'}で見つけやすい時期（${pl.mag.toFixed(1)}等）`,lv:2,tf:'date'});
+      }
+    }
+  });
+  // 月と惑星の接近
+  const H=[];
+  for(let t=t0-2*DAY;t<=t1+2*DAY;t+=HOUR){const d=dOf(t),S=sunPos(d),mo=moonPos(d,S),row={t};PLANETS.forEach(n=>{const p=planetPos(n,d,S);row[n]=acosd(sind(mo.lat)*sind(p.lat)+cosd(mo.lat)*cosd(p.lat)*cosd(mo.lon-p.lon));});H.push(row);}
+  PLANETS.forEach(n=>{
+    for(let i=1;i<H.length-1;i++){const s=H[i][n];
+      if(s<5.5&&s<=H[i-1][n]&&s<H[i+1][n]){const bv=bestView(H[i].t,pairMoonPlanet(n));
+        if(bv&&bv.sep<6&&inR(bv.t))ev.push({t:bv.t,cat:'conj',icon:'✨',short:'月と'+PJ[n],title:`月と${PJ[n]}が接近`,
+          detail:`${timeWord(bv.t)}、${dirName(bv.az)}の空で約${bv.sep.toFixed(1)}°（満月${moonCount(bv.sep)}個分）`,lv:3,tf:'hm'});}}
+  });
+  // 惑星どうしの接近
+  for(let a=0;a<PLANETS.length;a++)for(let b=a+1;b<PLANETS.length;b++){
+    const n1=PLANETS[a],n2=PLANETS[b],arr=[];
+    for(let t=t0-3*DAY;t<=t1+3*DAY;t+=DAY){const d=dOf(t),S=sunPos(d),p=planetPos(n1,d,S),q=planetPos(n2,d,S);arr.push([t,sepDeg(p.ra,p.dec,q.ra,q.dec)]);}
+    for(let i=1;i<arr.length-1;i++){
+      if(arr[i][1]<3&&arr[i][1]<=arr[i-1][1]&&arr[i][1]<arr[i+1][1]){const bv=bestView(arr[i][0],pairPlanets(n1,n2));
+        if(bv&&bv.sep<3.5&&inR(bv.t))ev.push({t:bv.t,cat:'conj',icon:'✨',short:PJ[n1]+'と'+PJ[n2],title:`${PJ[n1]}と${PJ[n2]}が接近`,
+          detail:`${timeWord(bv.t)}、${dirName(bv.az)}の空で約${bv.sep.toFixed(1)}°`,lv:bv.sep<1?1:2,tf:'hm'});}
+    }
+  }
+  ev.sort((a,b)=>a.t-b.t);
+  MONTH.set(key,ev);return ev;
+}
+function evTime(e){const d=new Date(e.t);return e.tf==='date'?'':e.tf==='hour'?d.getHours()+'時頃':hm(e.t);}
+
+/* ===================== 画面 ===================== */
+let SEL=tonightDate(), CHART_T=null, SL_START=0, VIEW=(()=>{const d=new Date(SEL);return {y:d.getFullYear(),m:d.getMonth()};})(), SHOW_ALL=false, HITS=[];
+
+function buildLocSel(){
+  let h='',found=false;
+  LOCS.forEach(([n,la,lo],i)=>{const s=OBS.name===n&&Math.abs(OBS.lat-la)<1e-3&&Math.abs(OBS.lon-lo)<1e-3;if(s)found=true;h+=`<option value="p${i}"${s?' selected':''}>${n}</option>`;});
+  if(!found)h=`<option value="cur" selected>${esc(OBS.name)}（${OBS.lat.toFixed(2)}, ${OBS.lon.toFixed(2)}）</option>`+h;
+  h+='<option value="gps">📍 現在地を使う</option><option value="manual">✏️ 緯度・経度を入力</option>';
+  $('#locSel').innerHTML=h;
+}
+function setObs(o){
+  OBS=o;try{localStorage.setItem('hoshizora.obs',JSON.stringify(o));}catch(e){}
+  MONTH.clear();NIGHT.clear();WX=null;WX_STATE='loading';buildLocSel();renderAll();
+  loadWeather().then(()=>{NIGHT.clear();renderForecast();renderDay();renderCalendar();});
+}
+$('#locSel').addEventListener('change',e=>{
+  const v=e.target.value;
+  if(v[0]==='p'){const [n,la,lo]=LOCS[+v.slice(1)];setObs({name:n,lat:la,lon:lo});}
+  else if(v==='gps'){
+    if(!navigator.geolocation){alert('この端末では現在地を取得できません');buildLocSel();return;}
+    navigator.geolocation.getCurrentPosition(p=>setObs({name:'現在地',lat:+p.coords.latitude.toFixed(3),lon:+p.coords.longitude.toFixed(3)}),
+      ()=>{alert('現在地を取得できませんでした（位置情報の許可を確認してください）');buildLocSel();},{timeout:15000});
+  }else if(v==='manual'){
+    const s=prompt('緯度,経度 を入力してください（例: 35.68,139.77）',OBS.lat+','+OBS.lon);
+    const m=s&&s.match(/(-?\d+(?:\.\d+)?)\s*[,、 ]\s*(-?\d+(?:\.\d+)?)/);
+    if(m&&Math.abs(+m[1])<=90&&Math.abs(+m[2])<=180)setObs({name:'指定地点',lat:+m[1],lon:+m[2]});else buildLocSel();
+  }
+});
+$('#redBtn').addEventListener('click',()=>{document.body.classList.toggle('red');$('#redBtn').classList.toggle('on');});
+$('#nowBtn').addEventListener('click',()=>{selectDay(tonightDate(),Date.now());$('#day').scrollIntoView({behavior:'smooth'});});
+$('#prevM').addEventListener('click',()=>{VIEW.m--;if(VIEW.m<0){VIEW.m=11;VIEW.y--;}renderCalendar();});
+$('#nextM').addEventListener('click',()=>{VIEW.m++;if(VIEW.m>11){VIEW.m=0;VIEW.y++;}renderCalendar();});
+$('#todayM').addEventListener('click',()=>{const d=new Date();VIEW={y:d.getFullYear(),m:d.getMonth()};renderCalendar();});
+$('#allBtn').addEventListener('click',()=>{SHOW_ALL=!SHOW_ALL;$('#allBtn').textContent=SHOW_ALL?'主なものだけ':'すべて表示';renderUpcoming();});
+
+function selectDay(day,chartT){
+  SEL=day;CHART_T=chartT||null;
+  const d=new Date(day);VIEW={y:d.getFullYear(),m:d.getMonth()};
+  renderForecast();renderDay();renderCalendar();
+}
+
+function renderForecast(){
+  const start=tonightDate();let h='';
+  for(let i=0;i<7;i++){
+    const day=addDays(start,i),nd=nightData(day),r=rating(nd);
+    const lbl=i===0?'今夜':i===1?'明日の夜':fmtDate(day);
+    h+=`<div class="fc${day===SEL?' sel':''}" data-day="${day}" role="button" tabindex="0">
+      <div class="fd">${lbl}</div>${moonSVG(nd.phase,28)}
+      <div class="stars">${starStr(nd.score)}</div><div class="rt ${r.cls}">${r.mark} ${r.text}</div>
+      <div class="sm">${nd.cloud!=null?'雲 '+Math.round(nd.cloud)+'%':'雲 —'} ・ 月なし ${(nd.moonlessMs/HOUR).toFixed(1)}h</div></div>`;
+  }
+  $('#fcRow').innerHTML=h;
+  $('#fcRow').querySelectorAll('.fc').forEach(el=>el.addEventListener('click',()=>selectDay(+el.dataset.day)));
+  $('#wxNote').textContent=WX_STATE==='ok'?`★は「月明かり」と「雲量予報」から計算した見やすさです。雲量予報：Open-Meteo（${hm(WX.at)}取得）。`:
+    WX_STATE==='loading'?'雲量予報を取得中…（★は今のところ月明かりだけで計算）':'雲量予報を取得できませんでした。★は月明かりだけで計算しています。';
+}
+
+function dayEventsOf(day){
+  const d=new Date(day),list=[...monthEvents(d.getFullYear(),d.getMonth())];
+  const n=new Date(addDays(day,1));if(n.getMonth()!==d.getMonth())list.push(...monthEvents(n.getFullYear(),n.getMonth()));
+  return list.filter(e=>nightOf(e.t)===day||(e.tf==='date'&&localMidnight(e.t)===day));
+}
+function evHTML(e,base,withDate){
+  const tt=evTime(e);
+  const dt=withDate?fmtDate(e.t)+(tt?' '+tt:''):(tt?(e.tf==='hour'?tt:hmRel(e.t,base)):'');
+  return `<button class="ev lv${e.lv}" data-t="${e.t}"><span class="ei">${e.icon}</span><span class="et">${dt?`<span class="ed">${dt}</span>`:''}<b>${esc(e.title)}</b></span><span class="edt">${esc(e.detail||'')}</span></button>`;
+}
+function renderDay(){
+  const nd=nightData(SEL),r=rating(nd),d=new Date(SEL);
+  $('#dayTitle').textContent=`${d.getMonth()+1}月${d.getDate()}日(${WD[d.getDay()]})の夜 ・ ${OBS.name}`;
+  $('#dayBadge').innerHTML=SEL===tonightDate()?'<span class="badge">今夜</span>':'';
+  const mev=nd.moonEv.map(x=>(x.up?'月の出 ':'月の入り ')+hmRel(x.t,SEL)).join(' / ')||(nd.mA[0]>0?'一晩中 空にあります':'一晩中 地平線の下です');
+  const ivs=nd.iv.filter(v=>v.e-v.s>=20*MIN);
+  const ivt=ivs.length?ivs.map(v=>`${hmRel(v.s,SEL)}〜${hmRel(v.e,SEL)}`).join('、')+`（計 ${durText(nd.moonlessMs)}）`:'なし（暗い時間はずっと月が出ています）';
+  const darkLbl=nd.thr===-18?'暗い夜空（天文薄明の終わり〜始まり）':'いちばん暗い時間';
+  const cl=nd.cloud!=null?`夜間の平均 ${Math.round(nd.cloud)}%`:(WX_STATE==='loading'?'取得中…':'予報なし（約7日先まで）');
+  // 21時ごろ見やすい星座
+  const t21=new Date(d.getFullYear(),d.getMonth(),d.getDate(),21).getTime(),dd=dOf(t21),lst=lstOf(dd);
+  const cs=CONSTS.map(([nm,ids])=>{const hs=ids.map(id=>{const s=STARS.find(x=>x[0]===id),e=precess(s[2]*15,s[3],dd);return horiz(e.ra,e.dec,lst,OBS.lat);});
+    if(hs.some(h=>h.alt<12))return null;const alt=hs.reduce((a,h)=>a+h.alt,0)/hs.length;
+    const az=atan2d(hs.reduce((a,h)=>a+sind(h.az),0),hs.reduce((a,h)=>a+cosd(h.az),0));return {nm,alt,az};}).filter(Boolean).sort((a,b)=>b.alt-a.alt);
+  $('#dayInfo').innerHTML=`
+    <div class="it score"><span class="ic">✦</span><div><b>総合</b> <span class="stars">${starStr(nd.score)}</span> <b class="${r.cls}">${r.mark} ${r.text}</b></div></div>
+    <div class="it"><span class="ic">☀</span><div>日の入り <b>${hmRel(nd.sset,SEL)}</b> → 日の出 <b>${hmRel(nd.srise,SEL)}</b></div></div>
+    <div class="it"><span class="ic">🌌</span><div>${darkLbl} <b>${hmRel(nd.adusk||nd.cdusk,SEL)}〜${hmRel(nd.adawn||nd.cdawn,SEL)}</b></div></div>
+    <div class="it"><span class="ic">${moonSVG(nd.phase,18)}</span><div>月齢 <b>${nd.age.toFixed(1)}</b>（${phaseName(nd.phase)}・輝き${Math.round(nd.illum*100)}%）<br><span class="sub">${mev}</span></div></div>
+    <div class="it"><span class="ic">✨</span><div>月明かりのない暗い時間：<b>${ivt}</b></div></div>
+    <div class="it"><span class="ic">☁</span><div>雲量予報：<b>${cl}</b></div></div>
+    ${cs.length?`<div class="it"><span class="ic">⭐</span><div>21時ごろ見やすい星座：${cs.slice(0,6).map(c=>`${c.nm}<span class="sub">（${dirName(c.az)}）</span>`).join('、')}</div></div>`:''}`;
+  const evs=dayEventsOf(SEL);
+  $('#dayEvents').innerHTML=evs.length?`<div class="box" style="margin-top:12px"><h3>この夜の天文現象</h3><div class="evlist">${evs.map(e=>evHTML(e,SEL)).join('')}</div></div>`:'';
+  $('#dayEvents').querySelectorAll('.ev').forEach(el=>el.addEventListener('click',()=>{CHART_T=+el.dataset.t;setupSlider();}));
+  // 惑星
+  $('#planets').innerHTML=planetsNight(nd).map(pl=>{
+    const vis=pl.iv.length>0;
+    return `<div class="pl${vis?'':' no'}"><span class="dot" style="background:${PCOL[pl.n]};color:${PCOL[pl.n]}"></span><b>${PJ[pl.n]}</b>
+      <span class="sub">${pl.p.mag.toFixed(1)}等・${brightWord(pl.p.mag)}</span>
+      <div class="vis">${visText(pl,nd)}</div>${vis?`<div class="sub">${hmRel(pl.best.t,SEL)}頃 ${dirName(pl.best.az)}の空・高さ${Math.round(pl.best.alt)}°</div>`:''}</div>`;
+  }).join('');
+  setupSlider();
+}
+
+/* ---------- 星図 ---------- */
+function setupSlider(){
+  const nd=nightData(SEL);
+  const st=(nd.sset||nd.t0+5*HOUR)-30*MIN, en=(nd.srise||nd.t1-5*HOUR)+30*MIN;
+  SL_START=Math.floor(st/(5*MIN))*5*MIN;
+  const steps=Math.ceil((en-SL_START)/(5*MIN)),sl=$('#timeSl');sl.max=steps;
+  if(CHART_T==null){
+    const now=Date.now(),d=new Date(SEL);
+    CHART_T=(SEL===tonightDate()&&now>=st&&now<=en)?now:Math.min(en,Math.max(st,new Date(d.getFullYear(),d.getMonth(),d.getDate(),21).getTime()));
+  }
+  sl.value=Math.round((CHART_T-SL_START)/(5*MIN));
+  drawSky(CHART_T);
+}
+$('#timeSl').addEventListener('input',e=>{CHART_T=SL_START+(+e.target.value)*5*MIN;drawSky(CHART_T);});
+
+function skyColors(a){return a<-18?['#0d1536','#050817']:a<-12?['#121d48','#070b22']:a<-6?['#1d2d68','#0c1538']:a<0?['#3b5196','#1b2756']:['#78a4dd','#3e6bb4'];}
+function drawSky(t){
+  const cv=$('#sky'),W=cv.clientWidth||400,dpr=window.devicePixelRatio||1;
+  cv.width=W*dpr;cv.height=W*dpr;const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);
+  const cx=W/2,cy=W/2,R=W/2-24;
+  const d=dOf(t),S=sunPos(d),lst=lstOf(d),se=eclRectToEq(S.x,S.y,0,d),sh=horiz(se.ra,se.dec,lst,OBS.lat);
+  const P=(alt,az)=>{const r=R*(90-alt)/90;return [cx-r*sind(az),cy-r*cosd(az)];};
+  HITS=[];
+  ctx.clearRect(0,0,W,W);
+  const col=skyColors(sh.alt),g=ctx.createRadialGradient(cx,cy,0,cx,cy,R);g.addColorStop(0,col[0]);g.addColorStop(1,col[1]);
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.fill();
+  ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.clip();
+  ctx.strokeStyle='rgba(140,160,220,.16)';ctx.lineWidth=1;
+  [30,60].forEach(a=>{ctx.beginPath();ctx.arc(cx,cy,R*(90-a)/90,0,Math.PI*2);ctx.stroke();});
+  for(let az=0;az<360;az+=45){const [x,y]=P(0,az);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);ctx.stroke();}
+  // 黄道
+  ctx.setLineDash([4,5]);ctx.strokeStyle='rgba(255,200,120,.32)';ctx.beginPath();let pen=false;
+  for(let L=0;L<=360;L+=2){const e=eclToEq(L,0,d),h=horiz(e.ra,e.dec,lst,OBS.lat);if(h.alt>-3){const [x,y]=P(h.alt,h.az);pen?ctx.lineTo(x,y):ctx.moveTo(x,y);pen=true;}else pen=false;}
+  ctx.stroke();ctx.setLineDash([]);
+  const dim=sh.alt>0?0.12:sh.alt>-6?0.35:sh.alt>-12?0.75:1;
+  // 恒星
+  const SP={};
+  STARS.forEach(s=>{const e=precess(s[2]*15,s[3],d),h=horiz(e.ra,e.dec,lst,OBS.lat);if(h.alt<-4)return;const [x,y]=P(h.alt,h.az);SP[s[0]]={x,y,alt:h.alt,az:h.az,mag:s[4],name:s[1],id:s[0]};});
+  ctx.globalAlpha=dim;
+  ctx.strokeStyle='rgba(120,160,255,.38)';ctx.lineWidth=1;
+  LINES.forEach(([a,b])=>{if(SP[a]&&SP[b]){ctx.beginPath();ctx.moveTo(SP[a].x,SP[a].y);ctx.lineTo(SP[b].x,SP[b].y);ctx.stroke();}});
+  ctx.setLineDash([2,5]);ctx.strokeStyle='rgba(255,255,255,.2)';
+  TRIANGLES.forEach(([a,b])=>{if(SP[a]&&SP[b]){ctx.beginPath();ctx.moveTo(SP[a].x,SP[a].y);ctx.lineTo(SP[b].x,SP[b].y);ctx.stroke();}});
+  ctx.setLineDash([]);
+  ctx.font='11px system-ui,sans-serif';
+  Object.values(SP).forEach(s=>{
+    const r=Math.max(0.7,2.9-0.62*s.mag);ctx.fillStyle=STAR_COL[s.id]||'#fff';ctx.beginPath();ctx.arc(s.x,s.y,r,0,Math.PI*2);ctx.fill();
+    if(s.name){ctx.fillStyle='rgba(220,230,255,.85)';ctx.fillText(s.name.replace(/（.*）/,''),s.x+r+3,s.y+(s.id==='alcyone'?-6:4));HITS.push({x:s.x,y:s.y,txt:`${s.name}（${s.mag.toFixed(1)}等）`,alt:s.alt,az:s.az});}
+  });
+  ctx.fillStyle='rgba(150,180,255,.7)';ctx.font='italic 11px system-ui,sans-serif';
+  CONSTS.forEach(([nm,ids])=>{const ps=ids.map(i=>SP[i]);if(ps.some(p=>!p||p.alt<4))return;const x=ps.reduce((a,p)=>a+p.x,0)/ps.length,y=ps.reduce((a,p)=>a+p.y,0)/ps.length;ctx.fillText(nm,x-ctx.measureText(nm).width/2,y+14);});
+  ctx.globalAlpha=1;
+  // 流星群の放射点（極大の前後3日）
+  const sl=sunPos(d).lon-PREC*(d-1.5);
+  SHOWERS.forEach(s=>{if(Math.abs(norm180(sl-s.lon))>3)return;const e=precess(s.ra,s.dec,d),h=horiz(e.ra,e.dec,lst,OBS.lat);if(h.alt<0)return;const [x,y]=P(h.alt,h.az);
+    ctx.strokeStyle='#d9b8ff';ctx.lineWidth=1.3;for(let k=0;k<8;k++){const a=k*Math.PI/4;ctx.beginPath();ctx.moveTo(x+4*Math.cos(a),y+4*Math.sin(a));ctx.lineTo(x+10*Math.cos(a),y+10*Math.sin(a));ctx.stroke();}
+    ctx.fillStyle='#e6d2ff';ctx.font='11px system-ui,sans-serif';ctx.fillText(s.name.replace('流星群','')+' 放射点',x+12,y-6);
+    HITS.push({x,y,txt:`${s.name}の放射点（ここを中心に流れ星が飛ぶ）`,alt:h.alt,az:h.az});});
+  // 惑星
+  ctx.font='bold 12px system-ui,sans-serif';
+  PLANETS.forEach(n=>{const p=planetPos(n,d,S),h=horiz(p.ra,p.dec,lst,OBS.lat);if(h.alt<-1)return;const [x,y]=P(h.alt,h.az);
+    const r=Math.min(6,Math.max(2.8,4.3-0.55*p.mag));ctx.shadowColor=PCOL[n];ctx.shadowBlur=10;ctx.fillStyle=PCOL[n];ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+    ctx.fillStyle=PCOL[n];ctx.fillText(PJ[n],x+r+3,y-3);HITS.push({x,y,txt:`${PJ[n]}（${p.mag.toFixed(1)}等）`,alt:h.alt,az:h.az});});
+  // 太陽
+  if(sh.alt>-1){const [x,y]=P(sh.alt,sh.az);ctx.fillStyle='#ffd34d';ctx.shadowColor='#ffd34d';ctx.shadowBlur=18;ctx.beginPath();ctx.arc(x,y,9,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#ffe9a0';ctx.fillText('太陽',x+12,y+4);HITS.push({x,y,txt:'太陽（直接見ないで！）',alt:sh.alt,az:sh.az});}
+  // 月
+  const mo=moonPos(d,S),tp=moonTopo(mo,OBS,lst),mh=horiz(tp.ra,tp.dec,lst,OBS.lat);
+  if(mh.alt>-1){const [x,y]=P(mh.alt,mh.az),[sx,sy]=P(sh.alt,sh.az),ang=Math.atan2(sy-y,sx-x),mr=9;
+    ctx.save();ctx.translate(x,y);ctx.rotate(ang);ctx.fillStyle='#39405f';ctx.beginPath();ctx.arc(0,0,mr,0,Math.PI*2);ctx.fill();
+    const pd=moonPathD(mo.illum,true,mr,0,0);if(pd){ctx.fillStyle='#f6f0d4';ctx.fill(new Path2D(pd));}ctx.restore();
+    ctx.fillStyle='#f6f0d4';ctx.fillText('月',x+12,y+4);HITS.push({x,y,txt:`月（輝き${Math.round(mo.illum*100)}%）`,alt:mh.alt,az:mh.az});}
+  ctx.restore();
+  ctx.strokeStyle='rgba(170,190,245,.65)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle='#dfe6ff';ctx.font='bold 13px system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('北',cx,cy-R-12);ctx.fillText('南',cx,cy+R+12);ctx.fillText('東',cx-R-12,cy);ctx.fillText('西',cx+R+12,cy);
+  ctx.textAlign='start';ctx.textBaseline='alphabetic';
+  const state=sh.alt>0?'昼間':sh.alt>-6?'夕方/明け方（薄明）':sh.alt>-18?'薄明（やや明るい）':'夜（暗い）';
+  $('#timeLbl').textContent=hmRel(t,SEL);
+  $('#skyTip').textContent=`${fmtDate(t)} ${hm(t)} の空 ・ ${state}`;
+}
+$('#sky').addEventListener('click',e=>{
+  const b=e.target.getBoundingClientRect(),x=e.clientX-b.left,y=e.clientY-b.top;
+  let best=null,bd=22;HITS.forEach(h=>{const dd=Math.hypot(h.x-x,h.y-y);if(dd<bd){bd=dd;best=h;}});
+  if(best)$('#skyTip').textContent=`${best.txt} ・ ${dirName(best.az)}の空、高さ${Math.round(best.alt)}°`;
+});
+let rzT=null;window.addEventListener('resize',()=>{clearTimeout(rzT);rzT=setTimeout(()=>CHART_T!=null&&drawSky(CHART_T),150);});
+
+/* ---------- カレンダー ---------- */
+function renderCalendar(){
+  const {y,m}=VIEW;$('#calTitle').textContent=`${y}年${m+1}月`;
+  const ev=monthEvents(y,m),first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate(),today=localMidnight(Date.now());
+  const fcStart=tonightDate(),fcEnd=addDays(fcStart,7);
+  let h=[...WD].map((w,i)=>`<div class="wd s${i}">${w}</div>`).join('');
+  for(let i=0;i<first;i++)h+='<div class="cell blank"></div>';
+  for(let dd=1;dd<=days;dd++){
+    const day=new Date(y,m,dd).getTime(),wd=new Date(day).getDay();
+    const es=ev.filter(e=>localMidnight(e.t)===day);
+    const mp=moonPhaseAt(new Date(y,m,dd,12).getTime());
+    let dot='';if(day>=fcStart&&day<fcEnd&&WX_STATE==='ok'){const nd=nightData(day);if(nd.cloud!=null){const r=rating(nd);dot=`<span class="ndot" style="background:var(--${r.cls.slice(2)})" title="${r.text}"></span>`;}}
+    const tags=es.filter(e=>e.cat!=='moon'||e.lv<=2).slice(0,3).map(e=>`<span class="tag c-${e.cat}">${esc(e.short)}</span>`).join('');
+    const ph=es.find(e=>e.cat==='moon');
+    h+=`<button class="cell d${wd}${day===today?' today':''}${day===SEL?' sel':''}" data-day="${day}">
+      <div class="cn"><span>${dd}</span>${dot}</div>${moonSVG(mp,18)}${ph&&ph.lv>2?`<span class="tag c-moon">${ph.short}</span>`:''}${tags}</button>`;
+  }
+  $('#calGrid').innerHTML=h;
+  $('#calGrid').querySelectorAll('.cell[data-day]').forEach(el=>el.addEventListener('click',()=>{selectDay(+el.dataset.day);$('#day').scrollIntoView({behavior:'smooth'});}));
+}
+
+/* ---------- これからの現象 ---------- */
+function renderUpcoming(){
+  const now=new Date(),from=localMidnight(now.getTime()),to=from+365*DAY;let all=[];
+  for(let i=0;i<13;i++){const d=new Date(now.getFullYear(),now.getMonth()+i,1);all.push(...monthEvents(d.getFullYear(),d.getMonth()));}
+  all=all.filter(e=>e.t>=from&&e.t<to&&e.lv<=(SHOW_ALL?3:2)&&(SHOW_ALL||e.cat!=='moon'||e.lv<=2));
+  let h='',cur='';
+  all.forEach(e=>{const d=new Date(e.t),k=d.getFullYear()+'年'+(d.getMonth()+1)+'月';if(k!==cur){h+=`<div class="mh">${k}</div>`;cur=k;}h+=evHTML(e,0,true);});
+  const el=$('#upList');el.className='evlist';el.innerHTML=h||'<div class="sub">ありません</div>';
+  el.querySelectorAll('.ev').forEach(b=>b.addEventListener('click',()=>{const t=+b.dataset.t;selectDay(nightOf(t),t);$('#day').scrollIntoView({behavior:'smooth'});}));
+}
+
+function renderAll(){renderForecast();renderDay();renderCalendar();$('#upList').className='sub';$('#upList').textContent='計算中…';setTimeout(renderUpcoming,30);}
+
+buildLocSel();
+renderAll();
+loadWeather().then(()=>{NIGHT.clear();renderForecast();renderDay();renderCalendar();});
+
+/* ---------- アプリ（PWA）対応 ---------- */
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});
+(()=>{ // iPhone の Safari では「ホーム画面に追加」の案内を一度だけ出す
+  const ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const standalone=navigator.standalone||matchMedia('(display-mode: standalone)').matches;
+  let seen=false;try{seen=localStorage.getItem('hoshizora.installTip')==='1';}catch(e){}
+  if(ios&&!standalone&&!seen&&location.protocol==='https:')$('#installTip').classList.add('show');
+  $('#installX').addEventListener('click',()=>{$('#installTip').classList.remove('show');try{localStorage.setItem('hoshizora.installTip','1');}catch(e){}});
+})();
+let LAST_TONIGHT=tonightDate(), LAST_REFRESH=Date.now();
+document.addEventListener('visibilitychange',()=>{ // アプリを開き直したとき、日付と天気を新しくする
+  if(document.hidden)return;
+  const tn=tonightDate();
+  if(tn===LAST_TONIGHT&&Date.now()-LAST_REFRESH<30*MIN)return;
+  if(SEL===LAST_TONIGHT){SEL=tn;CHART_T=null;const d=new Date(tn);VIEW={y:d.getFullYear(),m:d.getMonth()};}
+  LAST_TONIGHT=tn;LAST_REFRESH=Date.now();
+  loadWeather().then(()=>{NIGHT.clear();renderAll();});
+});
+</script>
+</body>
+</html>

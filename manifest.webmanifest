@@ -1,0 +1,17 @@
+{
+  "name": "星空カレンダー",
+  "short_name": "星空",
+  "description": "今夜の星空の見やすさ、星図、月齢、惑星、流星群・月食などの天文現象カレンダー",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#070b1d",
+  "theme_color": "#070b1d",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
