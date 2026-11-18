@@ -7,10 +7,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="星空">
+<meta name="apple-mobile-web-app-title" content="千葉の星空">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>星空カレンダー</title>
+<title>千葉の星空カレンダー</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1330'/%3E%3Cpath d='M40 12a20 20 0 1 0 12 32A16 16 0 1 1 40 12z' fill='%23ffe9a8'/%3E%3Ccircle cx='16' cy='16' r='2' fill='%23fff'/%3E%3Ccircle cx='50' cy='20' r='1.5' fill='%23fff'/%3E%3C/svg%3E">
 <style>
 :root{--bg:#070b1d;--card:#0f1631;--card2:#161f3e;--line:#26315a;--text:#e8ecff;--sub:#9aa6d1;--accent:#8fb4ff;--gold:#ffd88a;--good:#7ee0a8;--ok:#c2e57f;--warn:#ffcf6e;--bad:#ff8a8a}
@@ -64,6 +64,15 @@ select,.btn{background:var(--card2);border:1px solid var(--line);border-radius:9
 .pl .dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:-1px;box-shadow:0 0 6px currentColor}
 .pl.no{opacity:.5}
 .pl .vis{margin-top:2px}
+/* spots */
+.spotlist{display:grid;gap:6px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.spot{display:grid;grid-template-columns:26px 1fr auto;gap:2px 8px;align-items:center;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.spot.cur{border-color:var(--accent)}
+.spot .rk{font-weight:700;color:var(--gold);text-align:center;font-size:15px}
+.spot .sr{font-size:18px;font-weight:700;text-align:center;min-width:28px}
+.spot .sa{grid-column:2/4;display:flex;gap:6px;margin-top:3px}
+.btn.sm{font-size:12px;padding:3px 9px;text-decoration:none;color:var(--text)}
+.dk{color:var(--gold);letter-spacing:.5px}
 /* calendar */
 .calhead{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .calhead h2{margin:0;flex:1;text-align:center}
@@ -107,7 +116,7 @@ body.red #redOverlay{display:block}
 <body>
 <div id="redOverlay"></div>
 <header>
-  <h1><span>★</span> 星空カレンダー</h1>
+  <h1><span>★</span> 千葉の星空</h1>
   <select id="locSel" aria-label="観測地"></select>
   <button class="btn" id="nowBtn" title="今の空を表示">今</button>
   <button class="btn" id="redBtn" title="目を暗さに慣らしたまま見られる赤い表示">夜間モード</button>
@@ -117,6 +126,12 @@ body.red #redOverlay{display:block}
     <h2>今週の星空予報</h2>
     <div class="fcrow" id="fcRow"></div>
     <p class="note" id="wxNote"></p>
+  </section>
+
+  <section id="spots">
+    <h2 id="spotTitle">おすすめ観測スポット</h2>
+    <div id="spotList" class="spotlist"></div>
+    <p class="note">「暗さ」は街明かりの少なさの目安です（★5がいちばん暗い）。千葉県内で暗い空を見るなら、房総半島の南部・東部が狙い目です。東京湾側（北西方向）の空は都心の光で明るくなります。夜の海岸や山道では足元に注意し、立入禁止の場所や営業時間外の施設には入らないでください。</p>
   </section>
 
   <section id="day">
@@ -153,7 +168,7 @@ body.red #redOverlay{display:block}
   </section>
 
   <section id="upcoming">
-    <div class="uphead"><h2>これからの天文現象（1年分）</h2><button class="btn" id="allBtn">すべて表示</button></div>
+    <div class="uphead"><h2>千葉で見られる天文現象（1年分）</h2><button class="btn" id="allBtn">すべて表示</button></div>
     <div id="upList" class="sub">計算中…</div>
   </section>
 </main>
@@ -296,8 +311,32 @@ function golden(f,a,b,iter=40){ // f の最大
 }
 
 /* ===================== 観測地・データ ===================== */
-const LOCS=[['札幌',43.062,141.354],['仙台',38.268,140.869],['東京',35.681,139.767],['名古屋',35.182,136.907],['大阪',34.694,135.502],['広島',34.385,132.455],['福岡',33.590,130.402],['鹿児島',31.596,130.557],['那覇',26.212,127.681]];
-let OBS=(()=>{try{const o=JSON.parse(localStorage.getItem('hoshizora.obs'));if(o&&isFinite(o.lat)&&isFinite(o.lon))return o;}catch(e){}return {name:'東京',lat:35.681,lon:139.767};})();
+// 千葉県内の観測地。dark = 空の暗さの目安（1〜5）、q = 地図検索用の名前
+const CITIES=[
+  {name:'千葉市',lat:35.613,lon:140.113,dark:1,area:'千葉駅周辺',note:'市街地。月・惑星・明るい星向き',q:'千葉駅'},
+  {name:'船橋市',lat:35.702,lon:139.985,dark:1,area:'船橋駅周辺',note:'市街地。月・惑星・明るい星向き',q:'船橋駅'},
+  {name:'柏市',lat:35.862,lon:139.971,dark:1,area:'柏駅周辺',note:'市街地。月・惑星・明るい星向き',q:'柏駅'},
+  {name:'成田市',lat:35.777,lon:140.318,dark:2,area:'成田駅周辺',note:'郊外。少し離れると空が暗くなる',q:'成田駅'},
+  {name:'木更津市',lat:35.381,lon:139.925,dark:2,area:'木更津駅周辺',note:'郊外。西の空は東京湾の対岸の光で明るめ',q:'木更津駅'},
+  {name:'茂原市',lat:35.429,lon:140.288,dark:2,area:'茂原駅周辺',note:'郊外。東の海側へ行くと暗い空',q:'茂原駅'},
+  {name:'銚子市',lat:35.735,lon:140.827,dark:3,area:'銚子駅周辺',note:'三方を海に囲まれ、東の空が暗い',q:'銚子駅'},
+  {name:'館山市',lat:34.997,lon:139.870,dark:3,area:'館山駅周辺',note:'南房総の玄関口。南の空が開けている',q:'館山駅'},
+  {name:'鴨川市',lat:35.113,lon:140.098,dark:3,area:'安房鴨川駅周辺',note:'外房の海側。南東の空が暗い',q:'安房鴨川駅'},
+];
+const SPOTS=[
+  {name:'犬吠埼',lat:35.708,lon:140.869,dark:3,area:'銚子市',note:'関東の最東端の岬。東の太平洋側が暗く、水平線近くまで見える',q:'犬吠埼灯台'},
+  {name:'九十九里浜（片貝海岸）',lat:35.538,lon:140.455,dark:3,area:'九十九里町',note:'東が海で開けている。西側は内陸の街明かりあり',q:'片貝海水浴場'},
+  {name:'太東海岸',lat:35.300,lon:140.405,dark:3,area:'いすみ市',note:'東向きの海岸。東〜南東の空が開けている',q:'太東海岸'},
+  {name:'印旛沼',lat:35.735,lon:140.225,dark:2,area:'佐倉市',note:'千葉北部から行きやすい。広く開けた空',q:'佐倉ふるさと広場'},
+  {name:'養老渓谷',lat:35.245,lon:140.155,dark:4,area:'大多喜町',note:'房総の山あいで暗い空。谷あいなので見える範囲はやや狭め',q:'養老渓谷駅'},
+  {name:'清和県民の森',lat:35.190,lon:140.045,dark:4,area:'君津市',note:'房総の山の中で、県内でもかなり暗い空',q:'清和県民の森'},
+  {name:'大山千枚田',lat:35.120,lon:140.090,dark:4,area:'鴨川市',note:'棚田の上に広がる空。まわりに明かりが少ない',q:'大山千枚田'},
+  {name:'平砂浦海岸',lat:34.935,lon:139.815,dark:4,area:'館山市',note:'南向きの砂浜。南の水平線が開けていてカノープス向き',q:'平砂浦海岸'},
+  {name:'野島崎',lat:34.902,lon:139.888,dark:4,area:'南房総市',note:'房総半島の最南端。南が海で、南の低い星がよく見える',q:'野島崎灯台'},
+];
+const ALL_PLACES=[...CITIES,...SPOTS];
+let OBS=(()=>{try{const o=JSON.parse(localStorage.getItem('hoshizora.chiba.obs'));if(o&&isFinite(o.lat)&&isFinite(o.lon))return o;}catch(e){}return {name:'千葉市',lat:35.613,lon:140.113};})();
+const placeOf=o=>ALL_PLACES.find(p=>p.name===o.name&&Math.abs(p.lat-o.lat)<1e-3&&Math.abs(p.lon-o.lon)<1e-3);
 const obsKey=()=>OBS.lat.toFixed(3)+','+OBS.lon.toFixed(3);
 const lstOf=d=>rev(gmst(d)+OBS.lon);
 
@@ -419,6 +458,21 @@ async function loadWeather(){
     try{localStorage.setItem(key,JSON.stringify(WX));}catch(e){}
   }catch(e){WX=null;WX_STATE='error';}
 }
+let SPOT_WX=null, SPOT_WX_STATE='loading';
+async function loadSpotWeather(){ // 星空スポット全部の雲量を1回のリクエストでまとめて取る
+  const key='hoshizora.chiba.spotwx';
+  try{const c=JSON.parse(localStorage.getItem(key));if(c&&Date.now()-c.at<60*MIN&&c.maps&&c.maps.length===SPOTS.length){SPOT_WX=c;SPOT_WX_STATE='ok';return;}}catch(e){}
+  SPOT_WX_STATE='loading';
+  try{
+    const u=`https://api.open-meteo.com/v1/forecast?latitude=${SPOTS.map(s=>s.lat.toFixed(2)).join(',')}&longitude=${SPOTS.map(s=>s.lon.toFixed(2)).join(',')}&hourly=cloud_cover&forecast_days=8&timeformat=unixtime`;
+    const r=await fetch(u);if(!r.ok)throw new Error(r.status);
+    let j=await r.json();if(!Array.isArray(j))j=[j];
+    const maps=j.map(x=>{const m={};x.hourly.time.forEach((s,i)=>{const v=x.hourly.cloud_cover[i];if(v!=null)m[s*1000]=v;});return m;});
+    if(maps.length!==SPOTS.length)throw new Error('count');
+    SPOT_WX={at:Date.now(),maps};SPOT_WX_STATE='ok';
+    try{localStorage.setItem(key,JSON.stringify(SPOT_WX));}catch(e){}
+  }catch(e){SPOT_WX=null;SPOT_WX_STATE='error';}
+}
 
 /* ===================== 夜ごとの条件 ===================== */
 const NIGHT=new Map();
@@ -511,10 +565,12 @@ function lunarEclipse(tFull){
   const a0=par?u1:p1,a1=par?u4:p4;let any=false;
   for(let t=a0;t<=a1;t+=5*MIN)if(moonAt(t).alt>0){any=true;break;}
   const altMax=moonAt(tmax).alt;
+  if(altMax<=0&&!any)return null;          // この場所では月が沈んでいて見えない
+  if(!par&&altMax<=0)return null;          // 半影食は最大のときに見えないなら省く
   const type=tot?'皆既月食':par?'部分月食':'半影月食';
   let det=tot?`欠け始め ${hm(u1)} → 皆既 ${hm(u2)}〜${hm(u3)} → 終わり ${hm(u4)}`:par?`部分食 ${hm(u1)}〜${hm(u4)}（最大 ${hm(tmax)}、食分${umag.toFixed(2)}）`:`月がわずかに暗くなる程度で目立ちません（半影食分${pmag.toFixed(2)}）`;
   const vis=altMax>0?`この場所で見えます（最大のとき月の高さ${Math.round(altMax)}°）`:any?'月の出・月の入りの前後に一部だけ見えます':'この場所では月が地平線の下で見えません';
-  const lv=(par&&(altMax>0||any))?1:(par?2:(altMax>0?2:3));
+  const lv=par?1:3;
   return {t:tmax,cat:'eclipse',icon:'🌘',short:type.replace('月食','食'),title:type,detail:det+'。'+vis,lv,tf:'hm'};
 }
 function solarEclipseLocal(tNew){
@@ -584,6 +640,7 @@ function monthEvents(y,m){
   // 流星群
   angleRoots(t=>{const d=dOf(t);return sunPos(d).lon-PREC*(d-1.5);},SHOWERS.map(s=>s.lon),t0-DAY,t1+DAY,DAY).forEach(p=>{
     if(!inR(p.t))return;const s=SHOWERS[p.idx],c=meteorCond(s,p.t);
+    if(!c.ok)return;                        // 放射点が低く、ここでは見えない
     ev.push({t:p.t,cat:'meteor',icon:'☄️',short:s.name.replace('流星群',''),title:s.name+'が極大',detail:c.text,lv:s.major?1:(c.ok?2:3),tf:'hour'});
   });
   // 外惑星の衝
@@ -634,20 +691,22 @@ function evTime(e){const d=new Date(e.t);return e.tf==='date'?'':e.tf==='hour'?d
 let SEL=tonightDate(), CHART_T=null, SL_START=0, VIEW=(()=>{const d=new Date(SEL);return {y:d.getFullYear(),m:d.getMonth()};})(), SHOW_ALL=false, HITS=[];
 
 function buildLocSel(){
-  let h='',found=false;
-  LOCS.forEach(([n,la,lo],i)=>{const s=OBS.name===n&&Math.abs(OBS.lat-la)<1e-3&&Math.abs(OBS.lon-lo)<1e-3;if(s)found=true;h+=`<option value="p${i}"${s?' selected':''}>${n}</option>`;});
-  if(!found)h=`<option value="cur" selected>${esc(OBS.name)}（${OBS.lat.toFixed(2)}, ${OBS.lon.toFixed(2)}）</option>`+h;
-  h+='<option value="gps">📍 現在地を使う</option><option value="manual">✏️ 緯度・経度を入力</option>';
+  const cur=placeOf(OBS);
+  const opt=(p,i)=>`<option value="p${i}"${p===cur?' selected':''}>${esc(p.name)}</option>`;
+  let h=cur?'':`<option value="cur" selected>${esc(OBS.name)}（${OBS.lat.toFixed(2)}, ${OBS.lon.toFixed(2)}）</option>`;
+  h+=`<optgroup label="市街地">${CITIES.map(p=>opt(p,ALL_PLACES.indexOf(p))).join('')}</optgroup>`;
+  h+=`<optgroup label="星空スポット">${SPOTS.map(p=>opt(p,ALL_PLACES.indexOf(p))).join('')}</optgroup>`;
+  h+='<optgroup label="その他"><option value="gps">📍 現在地を使う</option><option value="manual">✏️ 緯度・経度を入力</option></optgroup>';
   $('#locSel').innerHTML=h;
 }
 function setObs(o){
-  OBS=o;try{localStorage.setItem('hoshizora.obs',JSON.stringify(o));}catch(e){}
+  OBS=o;try{localStorage.setItem('hoshizora.chiba.obs',JSON.stringify(o));}catch(e){}
   MONTH.clear();NIGHT.clear();WX=null;WX_STATE='loading';buildLocSel();renderAll();
-  loadWeather().then(()=>{NIGHT.clear();renderForecast();renderDay();renderCalendar();});
+  loadWeather().then(()=>{NIGHT.clear();renderForecast();renderDay();renderCalendar();renderSpots();});
 }
 $('#locSel').addEventListener('change',e=>{
   const v=e.target.value;
-  if(v[0]==='p'){const [n,la,lo]=LOCS[+v.slice(1)];setObs({name:n,lat:la,lon:lo});}
+  if(v[0]==='p'){const p=ALL_PLACES[+v.slice(1)];setObs({name:p.name,lat:p.lat,lon:p.lon});}
   else if(v==='gps'){
     if(!navigator.geolocation){alert('この端末では現在地を取得できません');buildLocSel();return;}
     navigator.geolocation.getCurrentPosition(p=>setObs({name:'現在地',lat:+p.coords.latitude.toFixed(3),lon:+p.coords.longitude.toFixed(3)}),
@@ -668,7 +727,37 @@ $('#allBtn').addEventListener('click',()=>{SHOW_ALL=!SHOW_ALL;$('#allBtn').textC
 function selectDay(day,chartT){
   SEL=day;CHART_T=chartT||null;
   const d=new Date(day);VIEW={y:d.getFullYear(),m:d.getMonth()};
-  renderForecast();renderDay();renderCalendar();
+  renderForecast();renderSpots();renderDay();renderCalendar();
+}
+
+/* ---------- おすすめ観測スポット ---------- */
+const DARKF=[0,0.55,0.7,0.82,0.92,1];
+let SPOT_ALL=false;
+function renderSpots(){
+  const nd=nightData(SEL),d=new Date(SEL);
+  const lbl=SEL===tonightDate()?'今夜':`${d.getMonth()+1}/${d.getDate()}(${WD[d.getDay()]})の夜`;
+  const rows=SPOTS.map((s,i)=>{
+    const m=SPOT_WX&&SPOT_WX.maps[i];let cs=0,cn=0,dark=0;
+    nd.ts.forEach((t,k)=>{if(nd.sA[k]<nd.thr){dark++;if(m){const v=m[Math.round(t/HOUR)*HOUR];if(v!=null){cs+=v;cn++;}}}});
+    const cloud=(cn&&cn>=dark*0.5)?cs/cn:null;
+    return {s,i,cloud,score:nd.moonQ*(cloud==null?1:Math.max(0,1-cloud/100))*DARKF[s.dark]};
+  }).sort((a,b)=>b.score-a.score);
+  const noWx=rows.every(r=>r.cloud==null);
+  $('#spotTitle').innerHTML=`🔭 ${lbl}のおすすめ観測スポット`+(noWx?` <span class="sub">${SPOT_WX_STATE==='loading'?'（雲量予報を取得中…）':'（雲量予報なし：暗さと月明かりだけで並べています）'}</span>`:'');
+  const cur=placeOf(OBS);
+  $('#spotList').innerHTML=rows.slice(0,SPOT_ALL?rows.length:4).map((r,k)=>{
+    const rt=rating({score:r.score,cloud:r.cloud});
+    const mapU='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(r.s.q);
+    return `<div class="spot${cur===r.s?' cur':''}"><div class="rk">${k+1}</div>
+      <div><b>${esc(r.s.name)}</b> <span class="sub">${esc(r.s.area)}</span>
+        <div class="sub">暗さ <span class="dk">${'★'.repeat(r.s.dark)}${'☆'.repeat(5-r.s.dark)}</span> ・ 雲 ${r.cloud==null?'—':Math.round(r.cloud)+'%'}</div>
+        <div class="sub">${esc(r.s.note)}</div></div>
+      <div class="sr ${rt.cls}" title="${rt.text}">${rt.mark}</div>
+      <div class="sa"><button class="btn sm" data-i="${r.i}">ここで見る</button><a class="btn sm" href="${mapU}" target="_blank" rel="noopener">地図</a></div></div>`;
+  }).join('')+`<button class="btn" id="spotMore" style="grid-column:1/-1">${SPOT_ALL?'上位4か所だけ表示':`残り${rows.length-4}か所も表示`}</button>`;
+  $('#spotMore').addEventListener('click',()=>{SPOT_ALL=!SPOT_ALL;renderSpots();});
+  $('#spotList').querySelectorAll('button[data-i]').forEach(b=>b.addEventListener('click',()=>{
+    const s=SPOTS[+b.dataset.i];setObs({name:s.name,lat:s.lat,lon:s.lon});$('#day').scrollIntoView({behavior:'smooth'});}));
 }
 
 function renderForecast(){
@@ -687,6 +776,15 @@ function renderForecast(){
     WX_STATE==='loading'?'雲量予報を取得中…（★は今のところ月明かりだけで計算）':'雲量予報を取得できませんでした。★は月明かりだけで計算しています。';
 }
 
+// カノープス（南極老人星）：千葉では真南の水平線すれすれ（高さ約2°）。見えたら長生きできるといわれる星
+function canopusHTML(nd){
+  let best=null;
+  nd.ts.forEach((t,i)=>{if(nd.sA[i]>=-12)return;const d=dOf(t),e=precess(6.3992*15,-52.696,d),h=horiz(e.ra,e.dec,lstOf(d),OBS.lat);if(!best||h.alt>best.alt)best={t,alt:h.alt,az:h.az};});
+  if(!best)return '';
+  const a=best.alt+1.02/Math.tan((best.alt+10.3/(best.alt+5.11))*RAD)/60; // 大気差（浮き上がり）を加える
+  if(a<0.5)return '';
+  return `<div class="it"><span class="ic">🌟</span><div>カノープス（南極老人星）：<b>${hmRel(best.t,nd.day)}頃</b> ${Math.abs(norm180(best.az-180))<4?'真南':dirName(best.az)+'の空'}、高さ約${a.toFixed(1)}°<br><span class="sub">水平線すれすれなので、南が海に開けた場所（野島崎・平砂浦海岸など）で探しましょう</span></div></div>`;
+}
 function dayEventsOf(day){
   const d=new Date(day),list=[...monthEvents(d.getFullYear(),d.getMonth())];
   const n=new Date(addDays(day,1));if(n.getMonth()!==d.getMonth())list.push(...monthEvents(n.getFullYear(),n.getMonth()));
@@ -718,7 +816,9 @@ function renderDay(){
     <div class="it"><span class="ic">${moonSVG(nd.phase,18)}</span><div>月齢 <b>${nd.age.toFixed(1)}</b>（${phaseName(nd.phase)}・輝き${Math.round(nd.illum*100)}%）<br><span class="sub">${mev}</span></div></div>
     <div class="it"><span class="ic">✨</span><div>月明かりのない暗い時間：<b>${ivt}</b></div></div>
     <div class="it"><span class="ic">☁</span><div>雲量予報：<b>${cl}</b></div></div>
-    ${cs.length?`<div class="it"><span class="ic">⭐</span><div>21時ごろ見やすい星座：${cs.slice(0,6).map(c=>`${c.nm}<span class="sub">（${dirName(c.az)}）</span>`).join('、')}</div></div>`:''}`;
+    ${cs.length?`<div class="it"><span class="ic">⭐</span><div>21時ごろ見やすい星座：${cs.slice(0,6).map(c=>`${c.nm}<span class="sub">（${dirName(c.az)}）</span>`).join('、')}</div></div>`:''}
+    ${canopusHTML(nd)}
+    ${placeOf(OBS)?`<div class="it"><span class="ic">📍</span><div class="sub">${esc(OBS.name)}：${esc(placeOf(OBS).note)}（暗さ ${'★'.repeat(placeOf(OBS).dark)}${'☆'.repeat(5-placeOf(OBS).dark)}）</div></div>`:''}`;
   const evs=dayEventsOf(SEL);
   $('#dayEvents').innerHTML=evs.length?`<div class="box" style="margin-top:12px"><h3>この夜の天文現象</h3><div class="evlist">${evs.map(e=>evHTML(e,SEL)).join('')}</div></div>`:'';
   $('#dayEvents').querySelectorAll('.ev').forEach(el=>el.addEventListener('click',()=>{CHART_T=+el.dataset.t;setupSlider();}));
@@ -851,11 +951,12 @@ function renderUpcoming(){
   el.querySelectorAll('.ev').forEach(b=>b.addEventListener('click',()=>{const t=+b.dataset.t;selectDay(nightOf(t),t);$('#day').scrollIntoView({behavior:'smooth'});}));
 }
 
-function renderAll(){renderForecast();renderDay();renderCalendar();$('#upList').className='sub';$('#upList').textContent='計算中…';setTimeout(renderUpcoming,30);}
+function renderAll(){renderForecast();renderSpots();renderDay();renderCalendar();$('#upList').className='sub';$('#upList').textContent='計算中…';setTimeout(renderUpcoming,30);}
 
 buildLocSel();
 renderAll();
-loadWeather().then(()=>{NIGHT.clear();renderForecast();renderDay();renderCalendar();});
+loadWeather().then(()=>{NIGHT.clear();renderForecast();renderSpots();renderDay();renderCalendar();});
+loadSpotWeather().then(renderSpots);
 
 /* ---------- アプリ（PWA）対応 ---------- */
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});
@@ -873,7 +974,7 @@ document.addEventListener('visibilitychange',()=>{ // アプリを開き直し�
   if(tn===LAST_TONIGHT&&Date.now()-LAST_REFRESH<30*MIN)return;
   if(SEL===LAST_TONIGHT){SEL=tn;CHART_T=null;const d=new Date(tn);VIEW={y:d.getFullYear(),m:d.getMonth()};}
   LAST_TONIGHT=tn;LAST_REFRESH=Date.now();
-  loadWeather().then(()=>{NIGHT.clear();renderAll();});
+  Promise.all([loadWeather(),loadSpotWeather()]).then(()=>{NIGHT.clear();renderAll();});
 });
 </script>
 </body>

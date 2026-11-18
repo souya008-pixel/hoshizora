@@ -1,5 +1,5 @@
 // 星空カレンダー service worker: works offline; fetches from the network first so updates show up
-const CACHE = 'hoshizora-v1';
+const CACHE = 'hoshizora-v2';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
